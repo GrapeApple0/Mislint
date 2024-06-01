@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Mislint (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Mislint (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
