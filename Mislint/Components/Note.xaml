@@ -5,32 +5,71 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:components="using:Mislint.Components"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:ui="using:CommunityToolkit.WinUI.UI"
     mc:Ignorable="d"
+    MaxWidth="680"
     Loaded="Note_Loaded">
-    <StackPanel Background="#505050" MaxWidth="660">
-        <Grid Margin="10" Background="#a0a0a0" CornerRadius="10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Border x:Name="icon" Grid.Column="0" Margin="5" VerticalAlignment="Top" CornerRadius="100" BorderThickness="0" BorderBrush="Transparent" Width="50" Height="50"/>
-            <Grid Grid.Column="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <TextBlock x:Name="username" Grid.Column="1" FontSize="20"/>
-                <TextBlock x:Name="content" Grid.Column="1" Grid.Row="1" TextWrapping="Wrap" IsTextSelectionEnabled="True" HorizontalAlignment="Stretch" />
-            </Grid>
-            <StackPanel x:Name="reactions" Grid.Row="1"/>
+    <Grid x:Name="root" Margin="10" Padding="10" Background="#222222" CornerRadius="10" RowDefinitions="Auto,Auto,Auto">
+        <Grid x:Name="renoteInfo" Grid.Row="0" Visibility="Collapsed" ColumnDefinitions="Auto,*,Auto,Auto">
+            <Border x:Name="renoteUserIcon" Grid.Column="0"
+                        Margin="5" VerticalAlignment="Top" CornerRadius="100"
+                        BorderThickness="0" BorderBrush="Transparent" Width="25" Height="25"/>
+            <TextBlock x:Name="renoteName"
+                           VerticalAlignment="Center"
+                           Grid.Column="1" FontSize="13" TextTrimming="CharacterEllipsis" />
+            <TextBlock x:Name="renoteCreatedAt"
+               VerticalAlignment="Center"
+               Grid.Column="2" FontSize="13" TextTrimming="CharacterEllipsis" />
+            <FontIcon x:Name="renoteVisibility" FontSize="13" Grid.Column="3" />
         </Grid>
-    </StackPanel>
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+            <Border Grid.Column="0" Grid.Row="0"
+                    Margin="5"
+                    VerticalAlignment="Top"
+                    BorderThickness="0" BorderBrush="Transparent"
+                    CornerRadius="1000">
+                <components:Imager x:Name="icon" Width="50" Height="50" />
+            </Border>
+            <Grid x:Name="rightSideRoot" Grid.Column="1" RowDefinitions="Auto,Auto">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto">
+                    <TextBlock x:Name="name" FontSize="15" Grid.Column="0" TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="username" FontSize="13" Grid.Column="1" />
+                    <TextBlock x:Name="createdAt" FontSize="15" Grid.Column="2" />
+                    <FontIcon x:Name="visibility" FontSize="13" Grid.Column="3" />
+                </Grid>
+                <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,Auto">
+                    <StackPanel x:Name="instanceTicker" Height="15" Orientation="Horizontal" HorizontalAlignment="Stretch" Grid.Row="1" CornerRadius="5">
+                        <StackPanel.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#86b300" Offset="0"/>
+                                <GradientStop Color="#0086b300" Offset="0.9"/>
+                            </LinearGradientBrush>
+                        </StackPanel.Background>
+                        <Image x:Name="instanceIcon" Width="15" Height="15"/>
+                        <TextBlock x:Name="instanceName" FontSize="10" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2">
+                        <TextBlock x:Name="content" TextWrapping="Wrap" IsTextSelectionEnabled="True" HorizontalAlignment="Stretch" />
+                        <VariableSizedWrapGrid x:Name="attachedFiles" Visibility="Collapsed" Orientation="Horizontal" HorizontalChildrenAlignment="Left" MaximumRowsOrColumns="2" />
+                        <controls:WrapPanel x:Name="reactions" Orientation="Horizontal" HorizontalAlignment="Stretch" />
+                    </StackPanel>
+                <StackPanel x:Name="actionPanel" Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Stretch"
+                            PointerEntered="ActionPanel_PointerEntered"
+                            PointerExited="ActionPanel_PointerExited">
+                        <Border x:Name="replyButton" Margin="0,0,40,0">
+                            <FontIcon Glyph="&#xE97A;" FontSize="14" Foreground="#404040" />
+                        </Border>
+                        <Border x:Name="renoteButton" Margin="0,0,40,0" Tapped="RenoteButton_Tapped">
+                            <FontIcon Glyph="&#xE8EE;" FontSize="14" Foreground="#404040" />
+                        </Border>
+                        <Border x:Name="reactionButton" Margin="0,0,40,0" Tapped="ReactionButton_Tapped">
+                            <FontIcon Glyph="&#xE710;" FontSize="14" Foreground="#404040" />
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
 </UserControl>

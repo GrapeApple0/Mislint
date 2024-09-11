@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Mislint.Components.PostForm"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Mislint.Components"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:components="using:Mislint.Components"
+    mc:Ignorable="d"
+    Loaded="PostForm_Loaded">
+    <Grid x:Name="root">
+        <StackPanel Margin="15">
+            <Grid Margin="0,10" ColumnDefinitions="*,Auto">
+                <Border Grid.Column="0"
+                VerticalAlignment="Top"
+                BorderThickness="0"
+                BorderBrush="Transparent"
+                CornerRadius="100"
+                HorizontalAlignment="Left"
+                Width="30" Height="30">
+                    <components:Imager x:Name="icon" Width="30" Height="30" />
+                </Border>
+                <StackPanel Orientation="Horizontal" Grid.Column="1">
+                    <ComboBox x:Name="visibilitySelector" Margin="5,0" SelectionChanged="VisibilitySelector_SelectionChanged" SelectedIndex="0" Width="100">
+                        <ComboBoxItem Tag="Public">パブリック</ComboBoxItem>
+                        <ComboBoxItem Tag="Home">ホーム</ComboBoxItem>
+                        <ComboBoxItem Tag="Follower">フォロワー</ComboBoxItem>
+                    </ComboBox>
+                    <Button x:Name="postButton" Click="PostButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock>ノート</TextBlock>
+                            <FontIcon FontSize="12" Glyph="&#xE725;" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+            <TextBox x:Name="content" TextWrapping="Wrap"
+                 HorizontalAlignment="Stretch" Margin="0,10" MinHeight="150" MaxHeight="550"
+                 AcceptsReturn="True"
+                 IsSpellCheckEnabled="True"
+                 TextChanged="content_TextChanged"/>
+            <ScrollViewer HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" HorizontalScrollBarVisibility="Visible" Height="80">
+                <StackPanel Visibility="Collapsed" Margin="0,10" Orientation="Horizontal" x:Name="attachedFiles">
+                </StackPanel>
+            </ScrollViewer>
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="uploadButton" Click="UploadButton_Click">
+                    <FontIcon Glyph="&#xE898;" />
+                </Button>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>

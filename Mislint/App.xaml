@@ -11,6 +11,7 @@
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
+            <x:Double x:Key="ContentDialogMaxWidth">5000</x:Double>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

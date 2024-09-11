@@ -5,14 +5,43 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:components="using:Mislint.Components"
     mc:Ignorable="d"
     Activated="Window_Activated">
-    <Grid>
-        <Grid>
-
-        </Grid>
-        <ScrollViewer MaxWidth="700" VerticalScrollBarVisibility="Hidden">
-            <StackPanel x:Name="notes"/>
-        </ScrollViewer>
-    </Grid>
+    <Page>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState>
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="{x:Bind navigationView.CompactModeThresholdWidth}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="navigationView.PaneDisplayMode" Value="Top" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <NavigationView x:Name="navigationView" SelectionChanged="NavigationView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Icon="Home" Content="タイムライン"  Tag="Timeline" IsSelected="True"/>
+                <NavigationViewItem Content="通知" Tag="Notification">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xEA8F;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem Content="ノート" Tag="Post" Icon="Send">
+                    <NavigationViewItem.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#f0587c" Offset="0"/>
+                            <GradientStop Color="#f06758" Offset="1"/>
+                        </LinearGradientBrush>
+                    </NavigationViewItem.Background>
+                </NavigationViewItem>
+                <NavigationViewItem Content="プロフィール" Tag="Profile" Icon="Contact" />
+            </NavigationView.FooterMenuItems>
+            <Frame x:Name="contentFrame"/>
+        </NavigationView>
+    </Page>
 </Window>
