@@ -6,8 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:components="using:Mislint.Components"
-    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
-    xmlns:ui="using:CommunityToolkit.WinUI.UI"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     mc:Ignorable="d"
     MaxWidth="680"
     Loaded="Note_Loaded">

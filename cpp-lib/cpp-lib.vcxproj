@@ -73,15 +73,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>..\Mislint\bin\x64\Debug\net7.0-windows10.0.19041.0</OutDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\Mislint\bin\x64\Release\net8.0-windows10.0.19041.0</OutDir>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>..\Mislint\bin\x64\Debug\net7.0-windows10.0.19041.0</OutDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>..\Mislint\bin\x64\Debug\net8.0-windows10.0.19041.0</OutDir>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -121,7 +117,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>D:\libwebp\lib\libwebp.lib;D:\libwebp\lib\libwebpdemux.lib;D:\libpng\lpng\projects\vstudio\x64\Release\zlib.lib;D:\libpng\lpng\projects\vstudio\x64\Release\libpng16.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\libpng\lpng\projects\vstudio\x64\Release\;D:\libwebp\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>libwebp\lib;libpng\lpng</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -138,7 +134,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\libwebp\lib;D:\libpng\lpng</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>libwebp\lib;libpng\lpng</AdditionalLibraryDirectories>
       <AdditionalDependencies>D:\libwebp\lib\libwebp.lib;D:\libwebp\lib\libwebpdemux.lib;D:\libpng\lpng\projects\vstudio\x64\Release\libpng16.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
