@@ -116,8 +116,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>D:\libwebp\lib\libwebp.lib;D:\libwebp\lib\libwebpdemux.lib;D:\libpng\lpng\projects\vstudio\x64\Release\zlib.lib;D:\libpng\lpng\projects\vstudio\x64\Release\libpng16.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>libwebp\lib;libpng\lpng</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libwebp\lib\libwebp.lib;libwebp\lib\libwebpdemux.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>libwebp\lib;</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -143,12 +143,7 @@
     <ClInclude Include="demux.h" />
     <ClInclude Include="lib.h" />
     <ClInclude Include="mux_types.h" />
-    <ClInclude Include="png.h" />
-    <ClInclude Include="pngconf.h" />
-    <ClInclude Include="pnglibconf.h" />
     <ClInclude Include="types.h" />
-    <ClInclude Include="zconf.h" />
-    <ClInclude Include="zlib.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lib.cpp" />

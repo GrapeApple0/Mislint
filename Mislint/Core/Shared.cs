@@ -57,5 +57,23 @@ namespace Mislint.Core
             minutes = span.Minutes;
             seconds = span.Seconds;
         }
+
+        public static string GetTimeSpan(DateTime time)
+        {
+            TimeSpanToDateParts(DateTime.UtcNow, time, out var years, out var months, out var days, out var hours, out var minutes, out var seconds);
+            if (years > 0)
+                return $"{years}年前";
+            if (months > 0)
+                return $"{months}ヶ月前";
+            if (days > 0)
+                return $"{days}日前";
+            if (hours > 0)
+                return $"{hours}時間前";
+            if (minutes > 0)
+                return $"{minutes}分前";
+            if (seconds > 0)
+                return $"{seconds}秒前";
+            return "たった今";
+        }
     }
 }

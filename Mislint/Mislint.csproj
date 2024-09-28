@@ -12,17 +12,19 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 		<XamlCodeGenerationControlFlags>DoNotGenerateOtherProviders</XamlCodeGenerationControlFlags>
-        <WindowsPackageType>None</WindowsPackageType>
-		<WindowsSdkPackageVersion>10.0.19041.38</WindowsSdkPackageVersion>
+		<WindowsPackageType>None</WindowsPackageType>
+		<WindowsSdkPackageVersion>10.0.26100.38</WindowsSdkPackageVersion>
 		<SupportedOSPlatformVersion>10.0.20348.0</SupportedOSPlatformVersion>
 	</PropertyGroup>
-	
+
 	<ItemGroup>
 		<None Remove="Components\Imager.xaml" />
 		<None Remove="Components\Mfm.xaml" />
 		<None Remove="Components\Note.xaml" />
 		<None Remove="Components\PostForm.xaml" />
 		<None Remove="Components\Timeline.xaml" />
+		<None Remove="Pages\PostForm.xaml" />
+		<None Remove="Pages\Settings.xaml" />
 		<None Remove="Pages\Timeline.xaml" />
 		<None Remove="Pages\UserInfo.xaml" />
 	</ItemGroup>
@@ -47,7 +49,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
 		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.240829007" />
 		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1" />
-		<PackageReference Include="Misharp" Version="2024.8.0" />
+		<PackageReference Include="Misharp" Version="2024.7.0.3" />
 		<PackageReference Include="NLog" Version="5.3.3" />
 		<PackageReference Include="NLog.Extensions.Logging" Version="5.3.12" />
 		<PackageReference Include="System.Drawing.Common" Version="8.0.8" />
@@ -63,24 +65,33 @@
 		<ProjectCapability Include="Msix" />
 	</ItemGroup>
 	<ItemGroup>
-	  <Page Update="Components\Timeline.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </Page>
-	  <Page Update="Components\Mfm.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </Page>
-	  <None Update="libpng16.dll">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	  <None Update="libwebpdemux.dll">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	  <Page Update="Pages\UserInfo.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </Page>
-	  <Page Update="Pages\Timeline.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </Page>
+		<Page Update="Components\Timeline.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+		<Page Update="Components\Mfm.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+		<None Update="cpp-lib.dll">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="libpng16.dll">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="libwebpdemux.dll">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<Page Update="Pages\Settings.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</Page>
+		<Page Update="Pages\PostForm.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</Page>
+		<Page Update="Pages\UserInfo.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+		<Page Update="Pages\Timeline.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
 	</ItemGroup>
 	<ItemGroup>
 		<Page Update="Components\Imager.xaml">
@@ -102,9 +113,15 @@
 		<HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
 	</PropertyGroup>
 	<ItemGroup>
-	  <CustomAdditionalCompileInputs Remove="Components\PostForm.xaml" />
+		<CustomAdditionalCompileInputs Remove="Components\PostForm.xaml" />
 	</ItemGroup>
 	<ItemGroup>
-	  <Resource Remove="Components\PostForm.xaml" />
+		<Resource Remove="Components\PostForm.xaml" />
+	</ItemGroup>
+	<ItemGroup>
+	  <EditorConfigFiles Remove="C:\Users\Porlam\source\repos\Mislint\Mislint\.editorconfig" />
+	</ItemGroup>
+	<ItemGroup>
+	  <None Include="C:\Users\Porlam\source\repos\Mislint\Mislint\.editorconfig" />
 	</ItemGroup>
 </Project>

@@ -7,19 +7,19 @@ namespace Mislint.Core
 {
     public static class WebP
     {
-        public static bool AllocateFrames(ref AnimatedImage image, uint num_frames)
+        public static bool AllocateFrames(ref AnimatedImage image, uint numFrames)
         {
-            ulong rgba_size = (ulong)image.CanvasWidth * image.CanvasHeight * 4;
-            ulong total_size = num_frames * rgba_size;
-            ulong total_frames_size = num_frames * 16;
-            if (total_size > int.MaxValue || total_frames_size > int.MaxValue)
+            var rgbaSize = (ulong)image.CanvasWidth * image.CanvasHeight * 4;
+            var totalSize = numFrames * rgbaSize;
+            ulong totalFramesSize = numFrames * 16;
+            if (totalSize > int.MaxValue || totalFramesSize > int.MaxValue)
             {
                 return false;
             }
-            image.NumFrames = num_frames;
-            var decodedFrames = new DecodedFrame[total_frames_size];
-            var mem = Marshal.AllocHGlobal((int)total_size);
-            for (uint i = 0; i < num_frames; i++)
+            image.NumFrames = numFrames;
+            var decodedFrames = new DecodedFrame[totalFramesSize];
+            var mem = Marshal.AllocHGlobal((int)totalSize);
+            for (uint i = 0; i < numFrames; i++)
             {
                 decodedFrames[i].rgba = mem/* + (IntPtr)(i * rgba_size)*/;
                 decodedFrames[i].duration = 0;
@@ -34,12 +34,12 @@ namespace Mislint.Core
         {
             var bitmap = new byte[bgra.Length];
             var height = bgra.Length / 4 / width;
-            for (int y = 0; y < height; y++)
+            for (var y = 0; y < height; y++)
             {
-                for (int x = 0; x < width; x++)
+                for (var x = 0; x < width; x++)
                 {
-                    int offset = y * width * 4 + x * 4;
-                    int rev = (height * width * 4) - (y * width * 4 + (width - x - 1) * 4) - 1;
+                    var offset = y * width * 4 + x * 4;
+                    var rev = (height * width * 4) - (y * width * 4 + (width - x - 1) * 4) - 1;
                     bitmap[rev] = bgra[offset + 3];
                     bitmap[rev - 1] = bgra[offset + 2];
                     bitmap[rev - 2] = bgra[offset + 1];
@@ -98,10 +98,10 @@ namespace Mislint.Core
 
         public struct Image
         {
-            public int width;
-            public int height;
-            public uint loop;
-            public List<WebPFrame> frames;
+            public int Width;
+            public int Height;
+            public uint Loop;
+            public List<WebPFrame> Frames;
         }
 
         public struct WebPFrame
@@ -115,40 +115,39 @@ namespace Mislint.Core
             image = null;
             var animatedImage = new AnimatedImage();
             var webPData = new WebPData();
-            GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+            var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
             webPData.bytes = handle.AddrOfPinnedObject();
             webPData.size = bytes.Length;
-            var frame_index = 0;
-            var prev_frame_timestamp = 0;
-            var anim_info = new WebPAnimInfo();
-            IntPtr dec = WebPAnimDecoderNewInternal(ref webPData, IntPtr.Zero, WEBP_DEMUX_ABI_VERSION);
-            if (!WebPAnimDecoderGetInfo(dec, ref anim_info)) goto End;
-            animatedImage.CanvasWidth = anim_info.canvas_width;
-            animatedImage.CanvasHeight = anim_info.canvas_height;
-            animatedImage.LoopCount = anim_info.loop_count;
-            animatedImage.BgColor = anim_info.bgcolor;
-            if (!AllocateFrames(ref animatedImage, anim_info.frame_count)) goto End;
+            var prevFrameTimestamp = 0;
+            var animInfo = new WebPAnimInfo();
+            var dec = WebPAnimDecoderNewInternal(ref webPData, IntPtr.Zero, WebpDemuxAbiVersion);
+            if (!WebPAnimDecoderGetInfo(dec, ref animInfo)) goto End;
+            animatedImage.CanvasWidth = animInfo.canvas_width;
+            animatedImage.CanvasHeight = animInfo.canvas_height;
+            animatedImage.LoopCount = animInfo.loop_count;
+            animatedImage.BgColor = animInfo.bgcolor;
+            if (!AllocateFrames(ref animatedImage, animInfo.frame_count)) goto End;
             var frames = new List<WebPFrame>();
-            int width = (int)animatedImage.CanvasWidth;
-            int height = (int)animatedImage.CanvasHeight;
+            var width = (int)animatedImage.CanvasWidth;
+            var height = (int)animatedImage.CanvasHeight;
             while (WebPAnimDecoderHasMoreFrames(dec))
             {
-                IntPtr frame_rgba = IntPtr.Zero;
-                int timestamp = 0;
-                if (!WebPAnimDecoderGetNext(dec, ref frame_rgba, ref timestamp))
+                var frameRGBA = IntPtr.Zero;
+                var timestamp = 0;
+                if (!WebPAnimDecoderGetNext(dec, ref frameRGBA, ref timestamp))
                 {
                     break;
                 }
-                int duration = timestamp - prev_frame_timestamp;
-                CleanupTransparentPixels(frame_rgba, width, height);
-                byte[] rgbaByte = new byte[width * 4 * height];
-                Marshal.Copy(frame_rgba, rgbaByte, 0, width * 4 * height);
+                var duration = timestamp - prevFrameTimestamp;
+                CleanupTransparentPixels(frameRGBA, width, height);
+                var rgbaByte = new byte[width * 4 * height];
+                Marshal.Copy(frameRGBA, rgbaByte, 0, width * 4 * height);
                 var bitmap = new byte[animatedImage.CanvasWidth * animatedImage.CanvasHeight * 4];
-                for (int y = 0; y < animatedImage.CanvasHeight; y++)
+                for (var y = 0; y < animatedImage.CanvasHeight; y++)
                 {
-                    for (int x = 0; x < animatedImage.CanvasWidth; x++)
+                    for (var x = 0; x < animatedImage.CanvasWidth; x++)
                     {
-                        int offset = y * width * 4 + x * 4;
+                        var offset = y * width * 4 + x * 4;
                         bitmap[offset + 2] = rgbaByte[offset + 0];
                         bitmap[offset + 1] = rgbaByte[offset + 1];
                         bitmap[offset + 0] = rgbaByte[offset + 2];
@@ -160,16 +159,14 @@ namespace Mislint.Core
                     Data = bitmap,
                     Duration = duration,
                 });
-                // File.WriteAllBytes($"{DateTime.Now.Second}{frame_index + 1}.bmp", FromBGRABytes(rgbaByte, (int)animatedImage.CanvasWidth));
-                frame_index++;
-                prev_frame_timestamp = timestamp;
+                prevFrameTimestamp = timestamp;
             }
             image = new Image()
             {
-                width = width,
-                height = height,
-                frames = frames,
-                loop = animatedImage.LoopCount,
+                Width = width,
+                Height = height,
+                Frames = frames,
+                Loop = animatedImage.LoopCount,
             };
         End:
             WebPAnimDecoderDelete(dec);

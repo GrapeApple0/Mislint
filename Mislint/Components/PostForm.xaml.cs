@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System;
 using Windows.Storage.Pickers;
 using Windows.Storage;
-using System.Diagnostics;
-using System.Threading.Tasks;
 using System.IO;
 using Misharp.Model;
 using Misharp.Controls;
@@ -27,6 +25,7 @@ namespace Mislint.Components
         private readonly ILogger logger;
         private readonly ObservableCollection<DriveFile> _files = new();
         private NotesApi.CreateVisibilityEnum _visibility = NotesApi.CreateVisibilityEnum.Public;
+
         public PostForm()
         {
             this.InitializeComponent();
@@ -51,8 +50,8 @@ namespace Mislint.Components
                 //    CornerRadius = new CornerRadius(4),
                 //    Width = 60,
                 //});
-                this.attachedFiles.Children.Add(new Grid() 
-                { 
+                this.AttachedFiles.Children.Add(new Grid()
+                {
                     CornerRadius = new CornerRadius(10),
                     Width = 60,
                     Height = 60,
@@ -64,7 +63,7 @@ namespace Mislint.Components
                             Width = 60,
                             Height = 60,
                             Stretch = Stretch.UniformToFill,
-                        } 
+                        }
                     }
                 });
             }
@@ -73,7 +72,7 @@ namespace Mislint.Components
         private async void PostForm_Loaded(object sender, RoutedEventArgs e)
         {
             Shared.I ??= (await Shared.MisharpApp.IApi.I()).Result;
-            this.icon.Url = Shared.I.AvatarUrl;
+            this.UserIcon.Url = Shared.I.AvatarUrl;
         }
 
         private async void PostButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -84,19 +83,13 @@ namespace Mislint.Components
                 fileIds = this._files.ToList().ConvertAll(f => f.Id);
             }
             var result = (await Shared.MisharpApp.NotesApi.Create(text: this.content.Text, fileIds: fileIds, visibility: _visibility));
+
             this.content.Text = "";
         }
 
         private void content_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (this.content.Text.Length == 0)
-            {
-                this.postButton.IsEnabled = false;
-            }
-            else
-            {
-                this.postButton.IsEnabled = true;
-            }
+            this.PostButton.IsEnabled = this.content.Text.Length != 0;
         }
 
         private async void UploadButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -109,28 +102,26 @@ namespace Mislint.Components
             openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
             openPicker.FileTypeFilter.Add("*");
             IReadOnlyList<StorageFile> files = await openPicker.PickMultipleFilesAsync();
-            if (files.Count > 0)
+            if (files.Count <= 0) return;
+            foreach (var file in files)
             {
-                foreach (var file in files)
-                {
-                    using var fs = File.OpenRead(file.Path);
-                    var driveFile = (await Shared.MisharpApp.DriveApi.FilesApi.Create(fs, name: file.Name, force: true)).Result;
-                    this._files.Add(driveFile);
-                    this.attachedFiles.Visibility = Visibility.Visible;
-                }
-                //Parallel.ForEach(files, async (file) =>
-                //{
-                //    using FileStream fs = System.IO.File.OpenRead(file.Path);
-                //    var driveFile = (await Shared.MisharpApp.DriveApi.FilesApi.Create(fs, name: file.Name)).Result;
-                //    this._files.Add(driveFile);
-                //    Debug.WriteLine(driveFile);
-                //});
+                await using var fs = File.OpenRead(file.Path);
+                var driveFile = (await Shared.MisharpApp.DriveApi.FilesApi.Create(fs, name: file.Name, force: true)).Result;
+                this._files.Add(driveFile);
+                this.AttachedFiles.Visibility = Visibility.Visible;
             }
+            //Parallel.ForEach(files, async (file) =>
+            //{
+            //    using FileStream fs = System.IO.File.OpenRead(file.Path);
+            //    var driveFile = (await Shared.MisharpApp.DriveApi.FilesApi.Create(fs, name: file.Name)).Result;
+            //    this._files.Add(driveFile);
+            //    Debug.WriteLine(driveFile);
+            //});
         }
 
         private void VisibilitySelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            this._visibility = (NotesApi.CreateVisibilityEnum)(sender as ComboBox).SelectedIndex;
+            this._visibility = (NotesApi.CreateVisibilityEnum)(((ComboBox)sender).SelectedIndex);
         }
     }
 }

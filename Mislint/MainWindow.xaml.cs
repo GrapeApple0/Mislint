@@ -2,19 +2,22 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using Mislint.Components;
 using Mislint.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text.Json;
-using System.Threading.Tasks;
+using Windows.Devices.Geolocation;
+using Windows.Foundation;
+using Windows.System;
+using Windows.UI.Core;
 using WinRT.Interop;
+using WindowActivatedEventArgs = Microsoft.UI.Xaml.WindowActivatedEventArgs;
 
 namespace Mislint
 {
@@ -24,76 +27,159 @@ namespace Mislint
 
     public sealed partial class MainWindow : Window
     {
-        private AppWindow _appWindow;
-        private static NativeMethods.WinProc newWndProc = null;
-        private static IntPtr oldWndProc = IntPtr.Zero;
-
+        private readonly AppWindow _appWindow;
+        private NativeMethods.WinProc _newWndProc;
+        private IntPtr _oldWndProc = IntPtr.Zero;
+        private readonly IntPtr _hWnd;
         public static int MinWindowWidth { get; set; } = 360;
         public static int MinWindowHeight { get; set; } = 480;
-        //public static int MaxWindowWidth { get; set; } = 1800;
-        //public static int MaxWindowHeight { get; set; } = 1600;
+        public static int MaxWindowWidth { get; set; } = 0;
+        public static int MaxWindowHeight { get; set; } = 0;
 
-        private static void RegisterWindowMinMax(Window window)
+        private void RegisterWindowMinMax()
         {
-            var hwnd = GetWindowHandleForCurrentWindow(window);
-
-            newWndProc = new NativeMethods.WinProc(WndProc);
-            oldWndProc = NativeMethods.SetWindowLongPtr(hwnd, NativeMethods.WindowLongIndexFlags.GWL_WNDPROC, newWndProc);
+            this._newWndProc = this.WndProc;
+            this._oldWndProc = NativeMethods.SetWindowLongPtr(this._hWnd, NativeMethods.WindowLongIndexFlags.GWL_WNDPROC, _newWndProc);
         }
 
-        private static IntPtr GetWindowHandleForCurrentWindow(object target) => WindowNative.GetWindowHandle(target);
-
-        private static IntPtr WndProc(IntPtr hWnd, NativeMethods.WindowMessage Msg, IntPtr wParam, IntPtr lParam)
+        private IntPtr WndProc(IntPtr hWnd, NativeMethods.WindowMessage msg, IntPtr wParam, IntPtr lParam)
         {
-            switch (Msg)
+            if (msg == NativeMethods.WindowMessage.WM_GETMINMAXINFO)
             {
-                case NativeMethods.WindowMessage.WM_GETMINMAXINFO:
-                    var dpi = NativeMethods.GetDpiForWindow(hWnd);
-                    var scalingFactor = (float)dpi / 96;
+                var dpi = NativeMethods.GetDpiForWindow(hWnd);
+                var scalingFactor = (float)dpi / 96;
 
-                    var minMaxInfo = Marshal.PtrToStructure<NativeMethods.MINMAXINFO>(lParam);
+                var minMaxInfo = Marshal.PtrToStructure<NativeMethods.MINMAXINFO>(lParam);
+                if (0 < MinWindowWidth)
                     minMaxInfo.ptMinTrackSize.x = (int)(MinWindowWidth * scalingFactor);
+                if (0 < MinWindowHeight)
                     minMaxInfo.ptMinTrackSize.y = (int)(MinWindowHeight * scalingFactor);
-                    //minMaxInfo.ptMaxTrackSize.x = (int)(MaxWindowWidth * scalingFactor);
-                    //minMaxInfo.ptMaxTrackSize.y = (int)(MaxWindowHeight * scalingFactor);
-                    Marshal.StructureToPtr(minMaxInfo, lParam, true);
-                    break;
-
+                if (0 < MaxWindowWidth)
+                    minMaxInfo.ptMaxTrackSize.x = (int)(MaxWindowWidth * scalingFactor);
+                if (0 < MaxWindowHeight)
+                    minMaxInfo.ptMaxTrackSize.y = (int)(MaxWindowHeight * scalingFactor);
+                Marshal.StructureToPtr(minMaxInfo, lParam, true);
             }
-            return NativeMethods.CallWindowProc(oldWndProc, hWnd, Msg, wParam, lParam);
-        }
-
-        public MainWindow()
-        {
-            this.InitializeComponent();
-            _appWindow = GetAppWindowForCurrentWindow();
-            _appWindow.Closing += OnClosing;
-            RegisterWindowMinMax(this);
-        }
-
-        private void Window_Activated(object sender, WindowActivatedEventArgs e)
-        {
-            this.contentFrame.Navigate(typeof(Pages.Timeline));
-            this.Activated -= Window_Activated;
+            return NativeMethods.CallWindowProc(this._oldWndProc, hWnd, msg, wParam, lParam);
         }
 
         private AppWindow GetAppWindowForCurrentWindow()
         {
-            IntPtr hWnd = WindowNative.GetWindowHandle(this);
-            WindowId myWndId = Win32Interop.GetWindowIdFromWindow(hWnd);
+            WindowId myWndId = Win32Interop.GetWindowIdFromWindow(this._hWnd);
             return AppWindow.GetFromWindowId(myWndId);
+        }
+
+        private static KeyboardAccelerator BuildKeyboardAccelerator(VirtualKey key, VirtualKeyModifiers? modifiers = null, TypedEventHandler<KeyboardAccelerator, KeyboardAcceleratorInvokedEventArgs>? eventHandler = null)
+        {
+            var keyboardAccelerator = new KeyboardAccelerator { Key = key };
+            if (modifiers.HasValue)
+            {
+                keyboardAccelerator.Modifiers = modifiers.Value;
+            }
+            if (eventHandler != null)
+                keyboardAccelerator.Invoked += eventHandler;
+            return keyboardAccelerator;
+        }
+
+        private readonly KeyboardAccelerator _altLeftKeyboardAccelerator;
+        private readonly KeyboardAccelerator _altRightKeyboardAccelerator;
+
+        public MainWindow()
+        {
+            this.InitializeComponent();
+            this._hWnd = WindowNative.GetWindowHandle(this);
+            _appWindow = GetAppWindowForCurrentWindow();
+            _appWindow.Closing += OnClosing;
+            RegisterWindowMinMax();
+            this.Content.PointerPressed += (sender, e) =>
+            {
+                if (e.GetCurrentPoint((UIElement)sender).Properties.IsXButton1Pressed)
+                {
+                    e.Handled = !TryGoBack();
+                }
+                else if (e.GetCurrentPoint((UIElement)sender).Properties.IsXButton2Pressed)
+                {
+                    e.Handled = !TryGoForward();
+                }
+            };
+            this.Content.KeyDown += (sender, e) =>
+            {
+                if (e.Key.HasFlag(VirtualKey.Control))
+                {
+                    Debug.WriteLine("ctrl+left down");
+                }
+            };
+            //this._altLeftKeyboardAccelerator = BuildKeyboardAccelerator(VirtualKey.Left, VirtualKeyModifiers.Control,
+            //    (sender, args) =>
+            //    {
+            //        args.Handled = this.TryGoBack();
+            //    });
+            //this._altRightKeyboardAccelerator = BuildKeyboardAccelerator(VirtualKey.Right, VirtualKeyModifiers.Control,
+            //    (sender, args) =>
+            //    {
+            //        args.Handled = this.TryGoForward();
+            //    });
+            //this.Content.KeyboardAccelerators.Add(this._altLeftKeyboardAccelerator);
+            //this.Content.KeyboardAccelerators.Add(this._altRightKeyboardAccelerator);
+        }
+
+        private void Window_Activated(object sender, WindowActivatedEventArgs e)
+        {
+            if (Settings.Instance.Setting.Host != null && Settings.Instance.Setting.Token != null)
+            {
+                this.ContentFrame.Navigate(typeof(Pages.Timeline));
+            }
+            else
+            {
+                this.ContentFrame.Navigate(typeof(Pages.Settings));
+            }
+            this.Activated -= Window_Activated;
         }
 
         private void OnClosing(object sender, AppWindowClosingEventArgs e)
         {
-            if (GlobalLock.Instance.Lock)
+            if (!GlobalLock.Instance.Lock) return;
+            e.Cancel = true;
+            GlobalLock.Instance.Unlocked += (_, _) =>
             {
-                e.Cancel = true;
-                GlobalLock.Instance.Unlocked += (_, _) =>
+                this.Close();
+            };
+        }
+
+        public void ShowPopup(Image child)
+        {
+            this.OverlayFlyout.Content = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Children =
                 {
-                    this.Close();
-                };
-            }
+                    child
+                },
+                MaxWidth = this.Root.ActualWidth - 25,
+                MaxHeight = this.Root.ActualHeight / 1.5,
+            };
+            this.OverlayFlyout.ShowAt(this.Content, new FlyoutShowOptions
+            {
+                Position = new Point(this.Content.ActualSize.X / 1.5, this.ContentFrame.ActualHeight),
+            });
+        }
+
+        public async void ShowDialog(string text)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Error",
+                Content = text,
+                CloseButtonText = "Ok",
+                XamlRoot = this.Content.XamlRoot
+            };
+            var result = (await dialog.ShowAsync());
+        }
+
+        public void SwitchPage(Type sourcePageType, Dictionary<string, string> parameter)
+        {
+            this.ContentFrame.Navigate(sourcePageType, parameter);
         }
 
         private void NavigationView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -106,22 +192,50 @@ namespace Mislint
             {
                 navOptions.IsNavigationStackEnabled = false;
             }
-            if (args.SelectedItem is NavigationViewItem viewItem)
+            if (args.SelectedItem is not NavigationViewItem viewItem) return;
+            var page = viewItem.Tag.ToString();
+
+            switch (page)
             {
-                if (viewItem.Tag.ToString() == "Timeline")
-                {
-                    this.contentFrame.Navigate(typeof(Pages.Timeline));
-                }
-                else if (viewItem.Tag.ToString() == "Profile")
-                {
-                    this.contentFrame.Navigate(typeof(Pages.UserInfo), new Dictionary<string, string>()
+                case "Timeline":
+                    this.ContentFrame.Navigate(typeof(Pages.Timeline));
+                    break;
+                case "Notification":
+                    throw new Exception("test");
+                case "Profile":
+                    this.ContentFrame.Navigate(typeof(Pages.UserInfo), new Dictionary<string, string>
                     {
                         {
                             "UserId", Shared.I.Id
                         },
                     });
-                }
+                    break;
+                case "Post":
+                    this.ContentFrame.Navigate(typeof(Pages.PostForm));
+                    break;
+                case "Settings":
+                    this.ContentFrame.Navigate(typeof(Pages.Settings));
+                    break;
             }
+        }
+
+        private bool TryGoBack()
+        {
+            if (!this.ContentFrame.CanGoBack) return false;
+            this.ContentFrame.GoBack();
+            return true;
+        }
+
+        private bool TryGoForward()
+        {
+            if (!this.ContentFrame.CanGoForward) return false;
+            this.ContentFrame.GoForward();
+            return true;
+        }
+
+        private void NavigationView_OnBackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
+        {
+            TryGoBack();
         }
     }
 }

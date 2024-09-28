@@ -3,10 +3,10 @@ using System.Runtime.InteropServices;
 
 namespace Mislint.Core
 {
-    public partial class NativeMethods
+    public abstract partial class NativeMethods
     {
-        public const int WEBP_DEMUX_ABI_VERSION = 0x0107;
-        public const int WEBP_DECODER_ABI_VERSION = 0x0209;
+        public const int WebpDemuxAbiVersion = 0x0107;
+        public const int WebpDecoderAbiVersion = 0x0209;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct DecodedFrame
@@ -18,8 +18,8 @@ namespace Mislint.Core
 
         public enum AnimatedFileFormat
         {
-            ANIM_GIF,
-            ANIM_WEBP
+            AnimGif,
+            AnimWebp
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -55,7 +55,7 @@ namespace Mislint.Core
         };
 
         [LibraryImport(@"cpp-lib.dll", StringMarshalling = StringMarshalling.Utf8, EntryPoint = "CallWebPAnimDecoderNewInternal")]
-        public static partial IntPtr WebPAnimDecoderNewInternal(ref WebPData webp_data, IntPtr dec_options, int abi_version);
+        public static partial IntPtr WebPAnimDecoderNewInternal(ref WebPData webpData, IntPtr decOptions, int abiVersion);
 
         [LibraryImport(@"cpp-lib.dll", StringMarshalling = StringMarshalling.Utf8, EntryPoint = "CallWebPAnimDecoderGetInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -67,7 +67,7 @@ namespace Mislint.Core
 
         [LibraryImport(@"cpp-lib.dll", StringMarshalling = StringMarshalling.Utf8, EntryPoint = "CallWebPAnimDecoderGetNext")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool WebPAnimDecoderGetNext(IntPtr dec, ref IntPtr buf_ptr, ref int timestamp_ptr);
+        public static partial bool WebPAnimDecoderGetNext(IntPtr dec, ref IntPtr bufPtr, ref int timestampPtr);
 
         [LibraryImport(@"cpp-lib.dll", StringMarshalling = StringMarshalling.Utf8, EntryPoint = "CallWebPAnimDecoderDelete")]
         public static partial void WebPAnimDecoderDelete(IntPtr dec);
@@ -103,9 +103,9 @@ namespace Mislint.Core
             WM_GETMINMAXINFO = 0x0024,
         }
 
-        public delegate IntPtr WinProc(IntPtr hWnd, WindowMessage Msg, IntPtr wParam, IntPtr lParam);
+        public delegate IntPtr WinProc(IntPtr hWnd, WindowMessage msg, IntPtr wParam, IntPtr lParam);
 
-        [DllImport("user32.dll")]
+        [DllImport("User32.dll")]
         public static extern int GetDpiForWindow(IntPtr hwnd);
 
         [DllImport("user32.dll", EntryPoint = "SetWindowLong")]
@@ -116,7 +116,7 @@ namespace Mislint.Core
 
         [DllImport("user32.dll")]
         public static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, WindowMessage Msg, IntPtr wParam, IntPtr lParam);
-
+        
         public static IntPtr SetWindowLongPtr(IntPtr hWnd, WindowLongIndexFlags nIndex, WinProc newProc)
         {
             if (IntPtr.Size == 8)

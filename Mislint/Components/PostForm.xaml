@@ -9,7 +9,7 @@
     xmlns:components="using:Mislint.Components"
     mc:Ignorable="d"
     Loaded="PostForm_Loaded">
-    <Grid x:Name="root">
+    <Grid>
         <StackPanel Margin="15">
             <Grid Margin="0,10" ColumnDefinitions="*,Auto">
                 <Border Grid.Column="0"
@@ -19,15 +19,15 @@
                 CornerRadius="100"
                 HorizontalAlignment="Left"
                 Width="30" Height="30">
-                    <components:Imager x:Name="icon" Width="30" Height="30" />
+                    <components:Imager x:Name="UserIcon" Width="30" Height="30" />
                 </Border>
                 <StackPanel Orientation="Horizontal" Grid.Column="1">
-                    <ComboBox x:Name="visibilitySelector" Margin="5,0" SelectionChanged="VisibilitySelector_SelectionChanged" SelectedIndex="0" Width="100">
+                    <ComboBox Margin="5,0" SelectionChanged="VisibilitySelector_SelectionChanged" SelectedIndex="0" Width="100">
                         <ComboBoxItem Tag="Public">パブリック</ComboBoxItem>
                         <ComboBoxItem Tag="Home">ホーム</ComboBoxItem>
                         <ComboBoxItem Tag="Follower">フォロワー</ComboBoxItem>
                     </ComboBox>
-                    <Button x:Name="postButton" Click="PostButton_Click">
+                    <Button x:Name="PostButton" Click="PostButton_Click">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock>ノート</TextBlock>
                             <FontIcon FontSize="12" Glyph="&#xE725;" />
@@ -41,7 +41,7 @@
                  IsSpellCheckEnabled="True"
                  TextChanged="content_TextChanged"/>
             <ScrollViewer HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" HorizontalScrollBarVisibility="Visible" Height="80">
-                <StackPanel Visibility="Collapsed" Margin="0,10" Orientation="Horizontal" x:Name="attachedFiles">
+                <StackPanel Visibility="Collapsed" Margin="0,10" Orientation="Horizontal" x:Name="AttachedFiles">
                 </StackPanel>
             </ScrollViewer>
             <StackPanel Orientation="Horizontal">

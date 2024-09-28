@@ -54,7 +54,7 @@ namespace Mislint.Pages
             };
             reloadButton.Click += (_, _) =>
             {
-                if (this.root.Children[^1] is Components.Timeline tl) tl.Reload();
+                if (this.Root.Children[^1] is Components.Timeline tl) tl.Reload();
             };
             Grid.SetColumn(selectorBar, 0);
             Grid.SetColumn(reloadButton, 1);
@@ -68,8 +68,8 @@ namespace Mislint.Pages
             Grid.SetRow(header, 1);
             Grid.SetRow(this.timelineComponent, 2);
             //this.root.Children.Add(postform);
-            this.root.Children.Add(header);
-            this.root.Children.Add(this.timelineComponent);
+            this.Root.Children.Add(header);
+            this.Root.Children.Add(this.timelineComponent);
             this.timelineComponent.Loaded += (_, _) =>
             {
                 selectorBar.SelectionChanged += this.SelectorBar_SelectionChanged;

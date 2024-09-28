@@ -9,11 +9,21 @@
     mc:Ignorable="d"
     Activated="Window_Activated">
     <Page>
+        <FlyoutBase.AttachedFlyout>
+            <Flyout x:Name="OverlayFlyout" LightDismissOverlayMode="On" Placement="Left">
+                <Flyout.FlyoutPresenterStyle>
+                    <Style TargetType="FlyoutPresenter">
+                        <Setter Property="MinWidth" Value="200" />
+                        <Setter Property="MinHeight" Value="200" />
+                    </Style>
+                </Flyout.FlyoutPresenterStyle>
+            </Flyout>
+        </FlyoutBase.AttachedFlyout>
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
                 <VisualState>
                     <VisualState.StateTriggers>
-                        <AdaptiveTrigger MinWindowWidth="{x:Bind navigationView.CompactModeThresholdWidth}" />
+                        <AdaptiveTrigger MinWindowWidth="{x:Bind NavigationView.CompactModeThresholdWidth}" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="navigationView.PaneDisplayMode" Value="Top" />
@@ -21,9 +31,9 @@
                 </VisualState>
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
-        <NavigationView x:Name="navigationView" SelectionChanged="NavigationView_SelectionChanged">
+        <NavigationView x:Name="NavigationView" SelectionChanged="NavigationView_SelectionChanged" BackRequested="NavigationView_OnBackRequested"  IsBackEnabled="True">
             <NavigationView.MenuItems>
-                <NavigationViewItem Icon="Home" Content="タイムライン"  Tag="Timeline" IsSelected="True"/>
+                <NavigationViewItem Icon="Home" Content="タイムライン" Tag="Timeline"/>
                 <NavigationViewItem Content="通知" Tag="Notification">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEA8F;" />
@@ -41,7 +51,9 @@
                 </NavigationViewItem>
                 <NavigationViewItem Content="プロフィール" Tag="Profile" Icon="Contact" />
             </NavigationView.FooterMenuItems>
-            <Frame x:Name="contentFrame"/>
+            <Grid x:Name="Root" Margin="0,40,0,0">
+                <Frame x:Name="ContentFrame"/>
+            </Grid>
         </NavigationView>
     </Page>
 </Window>

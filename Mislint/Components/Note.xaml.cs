@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Text.RegularExpressions.Generated;
 using Microsoft.UI;
@@ -10,6 +12,8 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Mislint.Core;
+using Mislint.Pages;
+using System.Collections.Generic;
 using Windows.UI;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -18,85 +22,105 @@ namespace Mislint.Components
 {
     public partial class Note : UserControl
     {
-        public string noteId;
-        private Misharp.Model.Note note;
-        private Misharp.Model.Note renote = null;
-        private bool reacted = false;
-        private readonly DispatcherTimer timer = new();
+        private Misharp.Model.Note _note;
+        private Misharp.Model.Note _renote = null;
+        private bool _reacted = false;
+        private readonly DispatcherTimer _timer = new();
+        private Flyout _renoteFlyout = null;
+        private ILogger _logger;
         public Note(Misharp.Model.Note note)
         {
             this.InitializeComponent();
-            this.note = note;
-            this.timer.Interval = new TimeSpan(0, 0, 1);
-            this.timer.Tick += Timer_Tick;
+            this._note = note;
+            this._timer.Interval = new TimeSpan(0, 0, 1);
+            this._timer.Tick += Timer_Tick;
+            this._logger = Logger.Instance.loggerFactory.CreateLogger("Note");
         }
 
         private void Timer_Tick(object sender, object e)
         {
-            AdjustTime(this.note.CreatedAt, out var str);
-            this.createdAt.Text = str;
-            if (this.renote != null)
+            this.CreatedAt.Text = AdjustTime(this._note.CreatedAt);
+            if (this._renote != null)
             {
-                AdjustTime(this.renote.CreatedAt, out str);
-                this.renoteCreatedAt.Text = str;
+                this.RenoteCreatedAt.Text = AdjustTime(this._renote.CreatedAt);
             }
         }
 
-        private void AdjustTime(DateTime time, out string str)
+        private string AdjustTime(DateTime time)
         {
             Shared.TimeSpanToDateParts(DateTime.UtcNow, time, out var years, out var months, out var days, out var hours, out var minutes, out var seconds);
             if (years > 0)
             {
-                str = $"{years}îNëO";
-                this.timer.Stop();
+                this._timer.Stop();
+                return $"{years}Âπ¥Ââç";
             }
             else if (months > 0)
             {
-                str = $"{months}ÉñåéëO";
-                this.timer.Stop();
+                this._timer.Interval = new TimeSpan(0, 45, 0);
+                return $"{months}„É∂ÊúàÂâç";
             }
             else if (days > 0)
             {
-                str = $"{days}ì˙ëO";
-                this.timer.Stop();
+                this._timer.Interval = new TimeSpan(0, 45, 0);
+                return $"{days}Êó•Ââç";
             }
             else if (hours > 0)
             {
-                str = $"{hours}éûä‘ëO";
-                this.timer.Interval = new TimeSpan(0, 0, 45);
+                this._timer.Interval = new TimeSpan(0, 0, 45);
+                return $"{hours}ÊôÇÈñìÂâç";
             }
             else if (minutes > 0)
             {
-                str = $"{minutes}ï™ëO";
-                this.timer.Interval = new TimeSpan(0, 0, 45);
+                this._timer.Interval = new TimeSpan(0, 0, 45);
+                return $"{minutes}ÂàÜÂâç";
             }
             else if (seconds > 0)
             {
-                str = $"{seconds}ïbëO";
-                this.timer.Interval = new TimeSpan(0, 0, 5);
+                this._timer.Interval = new TimeSpan(0, 0, 5);
+                return $"{seconds}ÁßíÂâç";
             }
             else
             {
-                str = "ÇΩÇ¡ÇΩç°";
-                this.timer.Interval = new TimeSpan(0, 0, 5);
+                this._timer.Interval = new TimeSpan(0, 0, 5);
+                return "„Åü„Å£„Åü‰ªä";
             }
         }
 
-        private async void Note_Loaded(object sender, RoutedEventArgs e)
+        private System.Drawing.Color GetInstanceColor()
         {
-            if (this.note.Renote != null)
+            var colorCode = "#86b300";
+            if (this._note.User.Instance?.ThemeColor != null)
+                colorCode = this._note.User.Instance.ThemeColor;
+            else if (Shared.Meta != null && Shared.Meta.ThemeColor != null)
+                colorCode = Shared.Meta.ThemeColor;
+            return (System.Drawing.Color)new System.Drawing.ColorConverter().ConvertFromString(colorCode)!;
+        }
+
+        private string GetInstanceIcon()
+        {
+            var iconUrl = $"https://{Shared.MisharpApp.Host}/favicon.ico";
+            if (this._note.User.Instance?.IconUrl != null)
+                iconUrl = this._note.User.Instance.IconUrl;
+            else if (Shared.Meta != null && Shared.Meta.IconUrl != null)
+                iconUrl = Shared.Meta.IconUrl;
+            return iconUrl;
+        }
+
+        private void Note_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (this._note.Renote != null)
             {
-                this.renote = this.note;
-                this.note = this.note.Renote;
-                this.renoteUserIcon.Background = new ImageBrush()
+                this._renote = this._note;
+                this._note = this._note.Renote;
+                this.RenoteUserIcon.Background = new ImageBrush()
                 {
                     ImageSource = new BitmapImage()
                     {
-                        UriSource = new Uri(this.renote.User.AvatarUrl),
+                        UriSource = new Uri(this._renote.User.AvatarUrl),
                     },
                 };
-                this.renoteName.Text = this.renote.User.Name + "Ç™ÉäÉmÅ[ÉgÇµÇ‹ÇµÇΩÅB";
-                this.renoteVisibility.Glyph = this.renote.Visibility switch
+                this.RenoteName.Text = this._renote.User.Name + "„Åå„É™„Éé„Éº„Éà„Åó„Åæ„Åó„Åü";
+                this.RenoteVisibility.Glyph = this._renote.Visibility switch
                 {
                     //"public" => "\uE774",
                     "home" => "\uE80F",
@@ -104,10 +128,28 @@ namespace Mislint.Components
                     "specified" => "\uE715",
                     _ => "",
                 };
-                this.renoteInfo.Visibility = Visibility.Visible;
+                this.RenoteInfo.Visibility = Visibility.Visible;
             }
-            this.content.Text = this.note.Text;
-            this.visibility.Glyph = this.note.Visibility switch
+            if (this._note.Cw != null && this._note.Cw != "")
+            {
+                this.content.Visibility = Visibility.Collapsed;
+                this.Cw.Visibility = Visibility.Visible;
+                this.CwText.Text = this._note.Cw;
+                this.CwButton.Content = new TextBlock()
+                {
+                    Text = $"„ÇÇ„Å£„Å®Ë¶ã„Çã({(this._note.Text != null ? this._note.Text.Count() : "0")}ÊñáÂ≠ó)",
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    FontSize = 12,
+                };
+            }
+            this.Text.Text = this._note.Text;
+            if (0 < this._note.RepliesCount)
+            {
+                this.ReplyCount.Text = this._note.RepliesCount.ToString();
+                this.ReplyCount.Visibility = Visibility.Visible;
+            }
+
+            this.VisibilityIcon.Glyph = this._note.Visibility switch
             {
                 //"public" => "\uE774",
                 "home" => "\uE80F",
@@ -115,20 +157,20 @@ namespace Mislint.Components
                 "specified" => "\uE715",
                 _ => "",
             };
-            FlyoutBase.SetAttachedFlyout(this.reactionButton, ReactionDeck.Instance.GetReactionDeckFlyout());
+            FlyoutBase.SetAttachedFlyout(this.ReactionButton, ReactionDeck.Instance.GetReactionDeckFlyout());
             // user
-            this.name.Text = this.note.User.Name ?? this.note.User.Username;
-            this.username.Text = $"@{this.note.User.Username}@{this.note.User.Host ?? Shared.MisharpApp.Host}";
-            this.icon.Url = this.note.User.AvatarUrl;
-            this.timer.Start();
+            this.DisplayName.Text = this._note.User.Name ?? this._note.User.Username;
+            this.Username.Text = $"@{this._note.User.Username}@{this._note.User.Host ?? Shared.MisharpApp.Host}";
+            this.Icon.Url = this._note.User.AvatarUrl;
+            this._timer.Start();
             #region instance ticker
-            var baseColor = (System.Drawing.Color)new System.Drawing.ColorConverter().ConvertFromString(this.note.User.Instance != null ? this.note.User.Instance.ThemeColor : (Shared.Meta != null ? Shared.Meta.ThemeColor ?? "#86b300" : "#86b300"));
+            var baseColor = GetInstanceColor();
             var startColor = Color.FromArgb(255, baseColor.R, baseColor.G, baseColor.B);
             var endColor = Color.FromArgb(0, baseColor.R, baseColor.G, baseColor.B);
-            this.instanceTicker.Background = new LinearGradientBrush()
+            this.InstanceTicker.Background = new LinearGradientBrush()
             {
-                GradientStops = new GradientStopCollection()
-                {
+                GradientStops =
+                [
                     new GradientStop()
                     {
                         Color = startColor,
@@ -139,18 +181,17 @@ namespace Mislint.Components
                         Color = endColor,
                         Offset = 0.9,
                     },
-                },
+                ],
                 StartPoint = new Windows.Foundation.Point(0, 0),
                 EndPoint = new Windows.Foundation.Point(1, 0),
             };
-            this.instanceIcon.Source = new BitmapImage(new Uri(this.note.User.Instance != null ?
-                                                this.note.User.Instance.IconUrl : (Shared.Meta != null ? Shared.Meta.IconUrl ?? "http://127.0.0.1:5173/favicon.ico" : "http://127.0.0.1:5173/favicon.ico")));
-            this.instanceName.Text = this.note.User.Instance != null
-                ? this.note.User.Instance.Name 
+            this.InstanceIcon.Source = new BitmapImage(new Uri(GetInstanceIcon()));
+            this.InstanceName.Text = this._note.User.Instance != null
+                ? this._note.User.Instance.Name
                 : Shared.Meta != null ? Shared.Meta.Name ?? "Misskey" : "Misskey";
             #endregion
             #region files
-            var files = note.Files;
+            var files = this._note.Files;
             if (files != null)
             {
                 var linearGradientBrush = new LinearGradientBrush();
@@ -201,24 +242,17 @@ namespace Mislint.Components
                     {
                         Source = new BitmapImage(new Uri(file.Url)),
                     };
-                    image.Tapped += async (_, _) =>
+                    image.Tapped += (_, _) =>
                     {
-                        ContentDialog dialog = new ContentDialog
+                        App.MainWindow.ShowPopup(new Image()
                         {
-                            XamlRoot = this.XamlRoot,
-                            Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style,
-                            Content = new Image()
-                            {
-                                Source = new BitmapImage(new Uri(file.Url)),
-                            },
-                        };
-                        dialog.PointerEntered += (_, _) =>
-                        {
-                            Debug.WriteLine("entered");
-                        };
-                        var result = await dialog.ShowAsync();
+                            Source = new BitmapImage(new Uri(file.Url)),
+                            VerticalAlignment = VerticalAlignment.Stretch,
+                            HorizontalAlignment = HorizontalAlignment.Stretch,
+                            Stretch = Stretch.Uniform,
+                        });
                     };
-                    var width = files.Count == 1 || this.rightSideRoot.ActualWidth < 360 ? this.rightSideRoot.ActualWidth - 20 : (this.rightSideRoot.ActualWidth - 20) / 2;
+                    var width = files.Count == 1 || this.RightSideRoot.ActualWidth < 360 ? this.RightSideRoot.ActualWidth - 20 : (this.RightSideRoot.ActualWidth - 20) / 2;
                     if (double.IsNaN(width) || width < 150) width = 150;
                     var border = new Border()
                     {
@@ -231,48 +265,50 @@ namespace Mislint.Components
                         MinWidth = 150,
                         MinHeight = 150,
                         Child = image,
-                        HorizontalAlignment = HorizontalAlignment.Stretch,                        
+                        HorizontalAlignment = HorizontalAlignment.Stretch,
                     };
                     this.SizeChanged += (sender, e) =>
                     {
-                        border.Width = files.Count == 1 || this.rightSideRoot.ActualWidth < 360 ? 
-                            this.rightSideRoot.ActualWidth - 20 : (this.rightSideRoot.ActualWidth - 20) / 2;
-                        var height = this.attachedFiles.ActualHeight - this.content.ActualHeight - 100;
+                        border.Width = files.Count == 1 || this.RightSideRoot.ActualWidth < 360 ?
+                            this.RightSideRoot.ActualWidth - 20 : (this.RightSideRoot.ActualWidth - 20) / 2;
+                        var height = this.AttachedFiles.ActualHeight - this.Text.ActualHeight - 100;
                         if (height < 200 || double.IsNaN(height))
                             height = 200;
                         border.MaxHeight = height;
                     };
-                    this.attachedFiles.Children.Add(border);
+                    this.AttachedFiles.Children.Add(border);
                 }
-                this.attachedFiles.Visibility = Visibility.Visible;
+                this.AttachedFiles.Visibility = Visibility.Visible;
             }
             #endregion
             #region reactions
-            var reactions = note.Reactions.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
-            var reactionEmojis = note.ReactionEmojis;
+            var reactions = this._note.Reactions.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            var reactionEmojis = this._note.ReactionEmojis;
             if (reactions != null && reactionEmojis != null)
             {
                 foreach (var reaction in reactions)
                 {
-                    DispatcherQueue.TryEnqueue(() => {
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
                         var reactionName = reaction.Key;
                         var emojiUrl = "";
                         bool isRemote;
                         if (reactionName.StartsWith(':'))
                         {
                             reactionName = reactionName.Remove(reactionName.Length - 1, 1).Remove(0, 1);
-                            emojiUrl = $"http://{Shared.MisharpApp.Host}/emoji/{reactionName}.webp";
+                            emojiUrl = $"https://{Shared.MisharpApp.Host}/emoji/{reactionName}.webp";
                             isRemote = !reactionName.EndsWith("@.");
                         }
                         else
                         {
-                            //var emojis = Twemoji.Parse(reactionName, Twemoji.ImageType.Png);
-                            //if (emojis.Length > 0) emojiUrl = emojis[0];
+                            var emojis = Twemoji.Parse(reactionName, Twemoji.ImageType.Png);
+                            if (emojis.Count > 0) emojiUrl = emojis[0].Url;
                             isRemote = false;
                         }
                         if (emojiUrl != "")
                         {
-                            var grid = new Grid() {
+                            var grid = new Grid()
+                            {
                                 Margin = new Thickness(5),
                             };
                             grid.ColumnDefinitions.Add(new ColumnDefinition());
@@ -284,18 +320,19 @@ namespace Mislint.Components
                                 Height = 15,
                                 HorizontalAlignment = HorizontalAlignment.Stretch,
                                 MaxWidth = 150,
-                                Margin = new Thickness(0,5,0,5),
+                                Margin = new Thickness(0, 5, 0, 5),
                             };
                             grid.Children.Add(emoji);
                             Grid.SetColumn(emoji, 0);
-                            var count = new TextBlock { 
+                            var count = new TextBlock
+                            {
                                 Text = $":{reaction.Value}",
                                 VerticalAlignment = VerticalAlignment.Center,
-                                Margin = new Thickness(0,0,5,0),
+                                Margin = new Thickness(0, 0, 5, 0),
                             };
                             Grid.SetColumn(count, 1);
                             grid.Children.Add(count);
-                            emoji.ImageLoadedEvent += (sender) =>
+                            emoji.ImageLoadedEvent += (_) =>
                             {
                                 emoji.Width = emoji.Aspect * emoji.Height + count.ActualWidth;
                             };
@@ -309,28 +346,13 @@ namespace Mislint.Components
                                     G = 50,
                                     B = 50,
                                 });
-                                grid.PointerEntered += (sender, e) =>
+                                grid.PointerEntered += Reaction_PointerEntered;
+                                grid.PointerExited += (_, _) =>
                                 {
-                                    grid.Background = new SolidColorBrush(new Color()
-                                    {
-                                        A = 125,
-                                        R = 10,
-                                        G = 10,
-                                        B = 10,
-                                    });
+
                                 };
-                                grid.PointerExited += (sender, e) =>
-                                {
-                                    grid.Background = new SolidColorBrush(new Color()
-                                    {
-                                        A = 125,
-                                        R = 50,
-                                        G = 50,
-                                        B = 50,
-                                    });
-                                };
-                            } 
-                            if (reaction.Key == note.MyReaction)
+                            }
+                            if (reaction.Key == this._note.MyReaction)
                             {
                                 grid.Background = new SolidColorBrush(new Color()
                                 {
@@ -339,17 +361,17 @@ namespace Mislint.Components
                                     G = 88,
                                     B = 124,
                                 });
-                                reacted = true;
-                                (reactionButton.Child as FontIcon).Glyph = "\uE949";
+                                this._reacted = true;
+                                ((FontIcon)this.ReactionButton.Child).Glyph = "\uE949";
                             }
                             #region Tooltip
                             var tooltip = new ToolTip();
                             var tooltipGrid = new Grid();
-                            tooltip.Opened += async (sender, e) =>
+                            tooltip.Opened += async (_, _) =>
                             {
                                 var progressRing = new ProgressRing();
                                 tooltipGrid.Children.Add(progressRing);
-                                var reactions = (await Shared.MisharpApp.NotesApi.Reactions(this.note.Id, reaction.Key)).Result;
+                                var reactions = (await Shared.MisharpApp.NotesApi.Reactions(this._note.Id, reaction.Key)).Result;
                                 var tooltipEmoji = new Imager()
                                 {
                                     Url = emojiUrl,
@@ -432,7 +454,7 @@ namespace Mislint.Components
                             ToolTipService.SetToolTip(grid, tooltip);
                             #endregion
                             grid.Tag = reaction.Key;
-                            this.reactions.Children.Add(grid);
+                            this.Reactions.Children.Add(grid);
                         }
                     });
                 }
@@ -440,77 +462,153 @@ namespace Mislint.Components
             #endregion
         }
 
+        private void Reaction_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            if (sender is Grid grid)
+            {
+                grid.Background = new SolidColorBrush(new Color()
+                {
+                    A = 125,
+                    R = 10,
+                    G = 10,
+                    B = 10,
+                });
+            }
+        }
+
+        private void Reaction_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            if (sender is not Grid grid) return;
+            grid.Background = new SolidColorBrush(new Color()
+            {
+                A = 125,
+                R = 50,
+                G = 50,
+                B = 50,
+            });
+            if (grid.Tag.ToString() == this._note.MyReaction)
+            {
+                grid.Background = new SolidColorBrush(new Color()
+                {
+                    A = 125,
+                    R = 240,
+                    G = 88,
+                    B = 124,
+                });
+            }
+        }
+
         private void ActionPanel_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            if (sender is StackPanel stackPanel)
+            if (sender is not StackPanel stackPanel) return;
+            foreach (var item in stackPanel.Children)
             {
-                foreach (var item in stackPanel.Children)
+                FontIcon fontIcon = default;
+                if (item is Border border)
                 {
-                    FontIcon fontIcon = default;
-                    if (item is FontIcon icon1) fontIcon = icon1;
-                    else if (item is Border button && button.Child is FontIcon icon2) fontIcon = icon2;
-                    fontIcon.Foreground = new SolidColorBrush(new Color() { A = 255, R = 0xA0, G = 0xA0, B = 0xA0 });
+                    fontIcon = border.Child switch
+                    {
+                        FontIcon icon1 => icon1,
+                        StackPanel { Children.Count: > 0 } panel => panel.Children[0] as FontIcon,
+                        _ => default
+                    };
                 }
+                if (fontIcon != null)
+                    fontIcon.Foreground = new SolidColorBrush(new Color() { A = 255, R = 0xA0, G = 0xA0, B = 0xA0 });
             }
         }
 
         private void ActionPanel_PointerExited(object sender, PointerRoutedEventArgs e)
         {
-            if (sender is StackPanel stackPanel)
+            if (sender is not StackPanel stackPanel) return;
+            foreach (var item in stackPanel.Children)
             {
-                foreach (var item in stackPanel.Children)
+                FontIcon fontIcon = default;
+                if (item is Border border)
                 {
-                    FontIcon fontIcon = default;
-                    if (item is FontIcon icon1) fontIcon = icon1;
-                    else if (item is Border button && button.Child is FontIcon icon2) fontIcon = icon2;
-                    fontIcon.Foreground = new SolidColorBrush(new Color() { A = 255, R = 0x40, G = 0x40, B = 0x40 });
+                    fontIcon = border.Child switch
+                    {
+                        FontIcon icon1 => icon1,
+                        StackPanel { Children.Count: > 0 } panel => panel.Children[0] as FontIcon,
+                        _ => default
+                    };
                 }
+                if (fontIcon != null)
+                    fontIcon.Foreground = new SolidColorBrush(new Color() { A = 255, R = 0x40, G = 0x40, B = 0x40 });
             }
         }
 
         private async void ReactionButton_Tapped(object sender, TappedRoutedEventArgs _)
         {
-            if (!reacted)
+            if (!this._reacted)
             {
                 ReactionDeck.Instance.Reacted += ReactionDeck_Reacted;
                 ReactionDeck.Instance.GetReactionDeckFlyout().Closing += ReactionDeck_Closing;
-                ReactionDeck.Instance.CurrentNoteId = this.note.Id;
+                ReactionDeck.Instance.CurrentNoteId = this._note.Id;
                 FlyoutBase.ShowAttachedFlyout((FrameworkElement)sender);
             }
             else
             {
-                foreach (var reaction in this.reactions.Children)
+                foreach (var reaction in this.Reactions.Children)
                 {
-                    if (reaction is Grid grid && grid.Tag.ToString() == this.note.MyReaction)
-                    {
-                        this.reactions.Children.Remove(grid);
-                        break;
-                    }
+                    if (reaction is not Grid grid || grid.Tag.ToString() != this._note.MyReaction) continue;
+                    this.Reactions.Children.Remove(grid);
+                    break;
                 }
-                (reactionButton.Child as FontIcon).Glyph = "\uE710";
-                this.reacted = false;
-                await Shared.MisharpApp.NotesApi.ReactionsApi.Delete(this.note.Id);
+                ((FontIcon)this.ReactionButton.Child).Glyph = "\uE710";
+                this._reacted = false;
+                await Shared.MisharpApp.NotesApi.ReactionsApi.Delete(this._note.Id);
             }
         }
 
         private async void ReactionDeck_Reacted(object sender, ReactionDeck.ReactedEventArgs e)
         {
             var contained = false;
-            await Shared.MisharpApp.NotesApi.ReactionsApi.Create(this.note.Id, $":{e.Emoji}:");
-            foreach (var reaction in this.reactions.Children)
+            this._logger.LogInformation("{emoji} was reacted to {noteId}", e.Emoji, this._note.Id);
+            await Shared.MisharpApp.NotesApi.ReactionsApi.Create(this._note.Id, $":{e.Emoji}:");
+            foreach (var reaction in this.Reactions.Children)
             {
-                if (reaction is Grid grid)
-                {
-                    Debug.WriteLine(grid.Tag.ToString());
-                    contained = true;
-                    break;
-                }
+                if (reaction is not Grid grid) continue;
+                contained = true;
+                break;
             }
             if (!contained)
             {
-
+                var grid = new Grid()
+                {
+                    CornerRadius = new CornerRadius(5),
+                    Background = new SolidColorBrush(new Color()
+                    {
+                        A = 125,
+                        R = 240,
+                        G = 88,
+                        B = 124,
+                    }),
+                    Margin = new Thickness(5),
+                    Children =
+                    {
+                        new Imager()
+                        {
+                            Url = $"https://{Shared.MisharpApp.Host}/emoji/{e.Emoji}.webp",
+                            Height = 15,
+                            HorizontalAlignment = HorizontalAlignment.Stretch,
+                            MaxWidth = 150,
+                            Margin = new Thickness(0, 5, 0, 5),
+                        },
+                        new TextBlock
+                        {
+                            Text = ":1",
+                            VerticalAlignment = VerticalAlignment.Center,
+                            Margin = new Thickness(0, 0, 5, 0),
+                        },
+                    },
+                };
+                grid.PointerEntered += Reaction_PointerEntered;
+                grid.PointerExited += Reaction_PointerExited;
+                this.Reactions.Children.Add(grid);
             }
-            this.reacted = true;
+            ((FontIcon)this.ReactionButton.Child).Glyph = "\uE949";
+            this._reacted = true;
         }
 
         private void ReactionDeck_Closing(object sender, FlyoutBaseClosingEventArgs e)
@@ -522,7 +620,55 @@ namespace Mislint.Components
 
         private void RenoteButton_Tapped(object sender, TappedRoutedEventArgs _)
         {
+            if (this._renoteFlyout == null)
+            {
+                var button = new Button()
+                {
+                    CornerRadius = new CornerRadius(3),
+                    Content = new StackPanel()
+                    {
+                        Children =
+                        {
+                            new FontIcon() { FontSize = 12, Glyph = "\uE8EE", },
+                            new TextBlock() { Text = "„É™„Éé„Éº„Éà", },
+                        },
+                        Orientation = Orientation.Horizontal,
+                    },
+                };
+                button.Tapped += async (_, _) =>
+                {
+                    var note = (await Shared.MisharpApp.NotesApi.Create(renoteId: this._note.Id)).Result;
+                    this._renoteFlyout?.Hide();
+                };
+                this._renoteFlyout = new Flyout()
+                {
+                    Content = new StackPanel()
+                    {
+                        Children =
+                        {
+                            button
+                        },
+                    },
+                    Placement = FlyoutPlacementMode.Bottom,
+                };
+                FlyoutBase.SetAttachedFlyout(this.RenoteButton, this._renoteFlyout);
+            }
+            this._renoteFlyout.ShowAt((FrameworkElement)sender);
+        }
 
+        private void CwButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.content.Visibility = this.content.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void Icon_OnTapped(object sender, TappedRoutedEventArgs e)
+        {
+            App.MainWindow.SwitchPage(typeof(UserInfo), new Dictionary<string, string>
+            {
+                {
+                    "UserId",this._note.User.Id
+                },
+            });
         }
     }
 }

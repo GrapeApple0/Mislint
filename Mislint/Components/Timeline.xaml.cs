@@ -1,14 +1,16 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Mislint.Core;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 namespace Mislint.Components
 {
-    public sealed partial class Timeline : UserControl
+    public sealed partial class Timeline
     {
-        private string lastId = null;
-        private bool loading = false;
+        private string _lastId;
+        private bool _loading;
+        private bool _last;
         public TimelineTypeEnum TimelineType { get; set; }
         public string UserId { get; set; }
 
@@ -17,24 +19,24 @@ namespace Mislint.Components
             this.InitializeComponent();
         }
 
-        public async void Reload()
+        public void Reload()
         {
-            this.notes.Children.Clear();
-            this.lastId = null;
-            await LoadTimeline();
+            this.Notes.Children.Clear();
+            this._lastId = null;
+            LoadTimeline();
         }
 
-        public async Task<List<Misharp.Model.Note>> GetTimeline(TimelineTypeEnum timelineType,
+        private async Task<List<Misharp.Model.Note>> GetTimeline(TimelineTypeEnum timelineType,
             int limit = 10, string sinceId = null, string untilId = null,
             int? sinceDate = null, int? untilDate = null,
             bool allowPartial = false, bool includeMyRenotes = true,
             bool includeRenotedMyNotes = true, bool includeLocalRenotes = true,
-            bool withFiles = false, bool withRenotes = true, bool withReplies = true, bool withChannelNotes = false)
+            bool withFiles = false, bool withRenotes = true, bool withReplies = true, bool withChannelNotes = false, int reccuring = 0)
         {
             if (this.TimelineType == TimelineTypeEnum.User && this.UserId.Length == 0) throw new System.Exception("UserId is required for User timeline");
             try
             {
-                return this.TimelineType switch
+                var res = this.TimelineType switch
                 {
                     TimelineTypeEnum.Home => (await Shared.MisharpApp.NotesApi.Timeline(limit, sinceId, untilId,
                                             sinceDate, untilDate,
@@ -58,15 +60,16 @@ namespace Mislint.Components
                                             includeRenotedMyNotes, includeLocalRenotes,
                                             withFiles, withRenotes)).Result,
                 };
+                if (res.Count < limit) this._last = true;
+                return res;
             }
             catch
             {
-                return await GetTimeline(timelineType,
-                    limit = 10, sinceId = null, untilId = null,
-                    sinceDate = null, untilDate = null,
-                    allowPartial = false, includeMyRenotes = true,
-                    includeRenotedMyNotes = true, includeLocalRenotes = true,
-                    withFiles = false, withRenotes = true, withReplies = true, withChannelNotes = false);
+                if (reccuring < 3)
+                {
+                    return await GetTimeline(this.TimelineType, limit, sinceId, untilId, sinceDate, untilDate, allowPartial, includeMyRenotes, includeRenotedMyNotes, includeLocalRenotes, withFiles, withRenotes, withReplies, withChannelNotes, reccuring + 1);
+                }
+                throw;
             }
         }
 
@@ -79,25 +82,22 @@ namespace Mislint.Components
             User,
         }
 
-        private async Task LoadTimeline()
+        public async void LoadTimeline()
         {
-            this.loading = true;
-            this.progressRing.Visibility = Visibility.Visible;
-            var tl = (await GetTimeline(this.TimelineType, limit: 20, untilId: lastId));
+            this._loading = true;
+            this.ProgressRing.Visibility = Visibility.Visible;
+            var tl = (await GetTimeline(this.TimelineType, limit: 20, untilId: this._lastId));
             foreach (var note in tl)
             {
-                await Task.Run(() =>
+                DispatcherQueue.TryEnqueue(() =>
                 {
-                    DispatcherQueue.TryEnqueue(() =>
-                    {
-                        var noteComponent = new Note(note);
-                        this.notes.Children.Add(noteComponent);
-                    });
+                    var noteComponent = new Note(note);
+                    this.Notes.Children.Add(noteComponent);
                 });
             }
-            lastId = tl[^1].Id;
-            this.progressRing.Visibility = Visibility.Collapsed;
-            this.loading = false;
+            this._lastId = tl[^1].Id;
+            this.ProgressRing.Visibility = Visibility.Collapsed;
+            this._loading = false;
         }
 
         private void Timeline_Loaded(object sender, RoutedEventArgs e)
@@ -105,20 +105,11 @@ namespace Mislint.Components
             //await LoadTimeline();
         }
 
-        private async void ScrollViewer_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
+        private void ScrollViewer_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
         {
-            if (sender is ScrollViewer scrollViewer)
-            {
-                //if (scrollViewer.VerticalOffset == 0) // on top
-                //{
-                //    Debug.WriteLine("on top");
-                //}
-                //else
-                if (scrollViewer.VerticalOffset == scrollViewer.ScrollableHeight) // on bottom
-                {
-                    if (!this.loading)  await LoadTimeline();
-                }
-            }
+            if (sender is not ScrollViewer scrollViewer) return;
+            if (!(Math.Abs(scrollViewer.VerticalOffset - scrollViewer.ScrollableHeight) < 1)) return; // on bottom
+            if (!this._loading && !this._last) this.LoadTimeline();
         }
     }
 }

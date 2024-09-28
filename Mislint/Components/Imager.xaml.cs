@@ -18,19 +18,19 @@ namespace Mislint.Components
 {
     public partial class Imager : UserControl
     {
-        private List<WebP.WebPFrame> frames = new();
-        private List<ImageSource> Bitmaps = new();
-        private int currentFrame = 0;
-        private readonly DispatcherTimer timer = new();
-        private int width;
-        private int height;
-        private ILogger logger;
-        public delegate void ImageLoaded<T>(T args);
+        private List<WebP.WebPFrame> _frames = [];
+        private readonly List<ImageSource> _bitmaps = [];
+        private int _currentFrame = 0;
+        private readonly DispatcherTimer _timer = new();
+        private int _width;
+        private int _height;
+        private readonly ILogger _logger;
+        public delegate void ImageLoaded<in T>(T args);
         public event ImageLoaded<EventArgs> ImageLoadedEvent;
         public double Aspect { get; private set; } = 1;
         private string _url;
         public string Url { 
-            get { return _url; } 
+            get => _url;
             set
             {
                 _url = value;
@@ -40,22 +40,21 @@ namespace Mislint.Components
         public Imager()
         {
             this.InitializeComponent();
-            this.logger = Logger.Instance.loggerFactory.CreateLogger("Imager");
-            timer.Tick += Timer_Tick;
+            this._logger = Logger.Instance.loggerFactory.CreateLogger("Imager");
+            _timer.Tick += Timer_Tick;
         }
 
         private void Timer_Tick(object sender, object e)
         {
-            if (this.currentFrame == this.frames.Count - 1) currentFrame = 0;
-            else currentFrame++;
-            this.image.Source = this.Bitmaps[currentFrame];
-            this.timer.Interval = new TimeSpan(0, 0, 0, 0, this.frames[currentFrame].Duration);
+            if (this._currentFrame == this._frames.Count - 1) _currentFrame = 0;
+            else _currentFrame++;
+            this.image.Source = this._bitmaps[_currentFrame];
+            this._timer.Interval = new TimeSpan(0, 0, 0, 0, this._frames[_currentFrame].Duration);
         }
 
         private static async Task<BitmapImage> GetBitmapAsync(byte[] data)
         {
-            BitmapImage bitmapImage;
-            bitmapImage = new BitmapImage();
+            var bitmapImage = new BitmapImage();
 
             using var stream = new InMemoryRandomAccessStream();
             using (var writer = new DataWriter(stream))
@@ -74,51 +73,57 @@ namespace Mislint.Components
         {
             if (bytes.Length < 4) return;
             var sig = Encoding.UTF8.GetString(bytes[0..4]);
-            if (sig == "RIFF" || sig == "WEBP")
+            if (sig is "RIFF" or "WEBP")
             {
                 GlobalLock.Instance.LockItems.Add(this.GetHashCode());
-                this.logger.LogInformation("Loading WebP image");
+                this._logger.LogInformation("Loading WebP image");
                 WebP.WebPLoad(bytes, out var result);
-                if (result != null && result.Value.frames.Count > 0)
+                if (result != null && result.Value.Frames.Count > 0)
                 {
-                    this.frames = result.Value.frames;
-                    this.width = result.Value.width;
-                    this.height = result.Value.height;
-                    if (1 < result.Value.frames.Count)
+                    this._frames = result.Value.Frames;
+                    this._width = result.Value.Width;
+                    this._height = result.Value.Height;
+                    if (1 < result.Value.Frames.Count)
                     {
-                        for (int i = 0; i < this.frames.Count; i++)
+                        for (var i = 0; i < this._frames.Count; i++)
                         {
                             await Task.Run(() =>
                             {
-                                DispatcherQueue.TryEnqueue(async () =>
+                                DispatcherQueue.TryEnqueue(Callback);
+                                return;
+
+                                async void Callback()
                                 {
-                                    var wb = new WriteableBitmap(result.Value.width, result.Value.height);
-                                    await wb.PixelBuffer.AsStream().WriteAsync(this.frames[i].Data);
-                                    this.Bitmaps.Add(wb);
+                                    var wb = new WriteableBitmap(result.Value.Width, result.Value.Height);
+                                    await wb.PixelBuffer.AsStream().WriteAsync(this._frames[i].Data);
+                                    this._bitmaps.Add(wb);
                                     //this.Bitmaps.Add(await GetBitmapAsync(this.frames[i].Data));
-                                });
+                                }
                             });
                         }
-                        this.image.Source = this.Bitmaps[currentFrame];
-                        this.timer.Interval = new TimeSpan(0, 0, 0, 0, this.frames[currentFrame].Duration);
-                        this.timer.Start();
+                        this.image.Source = this._bitmaps[_currentFrame];
+                        this._timer.Interval = new TimeSpan(0, 0, 0, 0, this._frames[_currentFrame].Duration);
+                        this._timer.Start();
                     }
                     else
                     {
                         await Task.Run(() =>
                         {
-                            DispatcherQueue.TryEnqueue(async () =>
+                            DispatcherQueue.TryEnqueue(Callback);
+                            return;
+
+                            async void Callback()
                             {
-                                var wb = new WriteableBitmap(result.Value.width, result.Value.height);
-                                await wb.PixelBuffer.AsStream().WriteAsync(this.frames[0].Data);
+                                var wb = new WriteableBitmap(result.Value.Width, result.Value.Height);
+                                await wb.PixelBuffer.AsStream().WriteAsync(this._frames[0].Data);
                                 this.image.Source = wb;
                                 //this.Bitmaps.Add(await GetBitmapAsync(this.frames[0].Data));
-                            });
+                            }
                         });
                     }
-                    this.image.Width = this.width;
+                    this.image.Width = this._width;
                     this.image.Height = this.Height;
-                    this.Aspect = (double)this.width / this.height;
+                    this.Aspect = (double)this._width / this._height;
                 }
                 GlobalLock.Instance.LockItems.Remove(this.GetHashCode());
             }
@@ -133,16 +138,14 @@ namespace Mislint.Components
                 this.image.Height = this.Height;
                 //this.image.Margin = new Thickness(5,0,5,0);
             }
-            if (ImageLoadedEvent != null) this.ImageLoadedEvent(new EventArgs());
+            if (ImageLoadedEvent != null) this.ImageLoadedEvent(EventArgs.Empty);
         }
 
         private async void Imager_Loaded(object sender, RoutedEventArgs e)
         {
-            if (this.Url != null)
-            {
-                this.logger.LogInformation("Imager loaded: {url}", Url);
-                await ImageCache.Instance.GetImage(this.Url, UpdateImage);
-            }
+            if (this.Url == null) return;
+            this._logger.LogInformation("Imager loaded: {url}", Url);
+            await ImageCache.Instance.GetImage(this.Url, UpdateImage);
         }
 
         private void Imager_SizeChanged(object sender, SizeChangedEventArgs e)
