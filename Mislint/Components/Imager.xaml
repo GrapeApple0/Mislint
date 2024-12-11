@@ -9,5 +9,5 @@
     mc:Ignorable="d"
     Loaded="Imager_Loaded"
     SizeChanged="Imager_SizeChanged">
-    <Image x:Name="image" Stretch="Uniform" Height="15"/>
+    <Image x:Name="image" Stretch="Uniform" />
 </UserControl>

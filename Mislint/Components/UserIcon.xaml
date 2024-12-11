@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Mislint.Components.UserIcon"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Mislint.Components"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:components="using:Mislint.Components"
+    mc:Ignorable="d"
+    Loaded="UserIcon_Loaded">
+    <Grid x:Name="Root">
+        <Border x:Name="RoundCornerBorder" Grid.Column="0" Grid.Row="0"
+            Margin="0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            BorderThickness="0" BorderBrush="Transparent"
+            CornerRadius="1000"
+            Width="80" Height="80">
+            <components:Imager x:Name="Icon"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch" />
+        </Border>
+    </Grid>
+</UserControl>

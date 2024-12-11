@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Mislint.Components;
+using Mislint.Core;
 
 namespace Mislint.Pages
 {
@@ -33,18 +34,24 @@ namespace Mislint.Pages
                 Text = "Home",
                 IsSelected = true,
             });
-            selectorBar.Items.Add(new SelectorBarItem
+            if (Shared.I.Policies.LtlAvailable)
             {
-                Text = "Local",
-            });
-            selectorBar.Items.Add(new SelectorBarItem
+                selectorBar.Items.Add(new SelectorBarItem
+                {
+                    Text = "Local",
+                });
+                selectorBar.Items.Add(new SelectorBarItem
+                {
+                    Text = "Hybrid",
+                });
+            }
+            if (Shared.I.Policies.GtlAvailable)
             {
-                Text = "Hybrid",
-            });
-            selectorBar.Items.Add(new SelectorBarItem
-            {
-                Text = "Global",
-            });
+                selectorBar.Items.Add(new SelectorBarItem
+                {
+                    Text = "Global",
+                });
+            }
             var reloadButton = new Button
             {
                 Content = new FontIcon()

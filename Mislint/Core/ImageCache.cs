@@ -1,7 +1,6 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -10,30 +9,13 @@ namespace Mislint.Core
     public class ImageCache
     {
         public static ImageCache Instance { get; } = new ImageCache();
-        private readonly SqliteConnection connection;
         private readonly string cacheDir = $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\mislint\\cache\\";
         private readonly ILogger logger;
-
+        private readonly MemoryCache _memoryCache;
         private ImageCache()
         {
             logger = Logger.Instance.loggerFactory.CreateLogger("ImageCache");
-            try
-            {
-                var connectionString = new SqliteConnectionStringBuilder()
-                {
-                    DataSource = "cache.db"
-                }.ToString();
-                connection = new SqliteConnection(connectionString);
-                connection.Open();
-                using var command = connection.CreateCommand();
-                command.CommandText = "CREATE TABLE IF NOT EXISTS cache (url TEXT PRIMARY KEY, filename TEXT, created_at INTEGER, last_view_at INTEGER)";
-                command.ExecuteNonQuery();
-                if (!Directory.Exists(cacheDir)) Directory.CreateDirectory(cacheDir);
-            }
-            catch
-            {
-                throw;
-            }
+            this._memoryCache = new MemoryCache(new MemoryCacheOptions());
             logger.LogInformation("ImageCache initialized: {cacheDir}", cacheDir);
         }
 
@@ -47,6 +29,7 @@ namespace Mislint.Core
                 var bytes = await Shared.HttpClient.GetByteArrayAsync(url);
                 await File.WriteAllBytesAsync(path, bytes);
                 Add(url, filename);
+                this.All();
                 return bytes;
             }
             catch (Exception e)
@@ -70,24 +53,18 @@ namespace Mislint.Core
 
         public bool IsExists(string url, out string path)
         {
-            using var command = connection.CreateCommand();
-            command.CommandText = "SELECT filename FROM cache WHERE url = @url";
-            command.Parameters.AddWithValue("@url", url);
-            using var reader = command.ExecuteReader();
-            if (reader.Read())
+            path = null;
+            if (this._memoryCache.TryGetValue(url, out var res))
             {
-                path = cacheDir + reader.GetString(0);
+                path = res.ToString();
                 logger.LogInformation("Cache hit: {path}", path);
                 if (!File.Exists(path))
                 {
                     logger.LogInformation("Cache file not found: {path}", path);
-                    Delete(url);
-                    path = null;
                     return false;
                 }
                 return true;
             }
-            path = null;
             return false;
         }
 
@@ -95,13 +72,7 @@ namespace Mislint.Core
         {
             try
             {
-                using var command = connection.CreateCommand();
-                command.CommandText = "INSERT INTO cache (url, filename, created_at, last_view_at) VALUES (@url, @filename, @created_at, @last_view_at)";
-                command.Parameters.AddWithValue("@url", url);
-                command.Parameters.AddWithValue("@filename", filename);
-                command.Parameters.AddWithValue("@created_at", DateTimeOffset.Now.ToUnixTimeSeconds());
-                command.Parameters.AddWithValue("@last_view_at", DateTimeOffset.Now.ToUnixTimeSeconds());
-                command.ExecuteNonQuery();
+                this._memoryCache.Set(url, filename, new DateTimeOffset(DateTime.Now + TimeSpan.FromHours(1)));
             }
             catch
             {
@@ -111,21 +82,18 @@ namespace Mislint.Core
 
         public void Delete(string url)
         {
-            using var command = connection.CreateCommand();
-            command.CommandText = $"DELETE FROM cache WHERE url = @{nameof(url)}";
-            command.Parameters.AddWithValue("@url", url);
-            command.ExecuteNonQuery();
+            this._memoryCache.Remove(url);
+        }
+
+        public void Clear()
+        {
+            
         }
 
         public void All()
         {
-            using var command = connection.CreateCommand();
-            command.CommandText = $"SELECT * FROM cache";
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                Debug.WriteLine("url: {url}, filename: {filename}, created_at: {created_at}, last_view_at: {last_view_at}", reader.GetString(0), reader.GetString(1), reader.GetInt64(2), reader.GetInt64(3));
-            }
+            //foreach (var key in this._memoryCache.GetKeys())
+            //    Debug.WriteLine($"Key: '{key}', Key type: '{key.GetType()}'");
         }
     }
 }

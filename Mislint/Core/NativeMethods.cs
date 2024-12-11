@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Windows.System;
+using static Mislint.Core.KeyboardHook;
 
 namespace Mislint.Core
 {
     public abstract partial class NativeMethods
     {
+        // WebP
         public const int WebpDemuxAbiVersion = 0x0107;
         public const int WebpDecoderAbiVersion = 0x0209;
 
@@ -76,6 +79,7 @@ namespace Mislint.Core
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CleanupTransparentPixels(IntPtr rgba, int width, int height);
 
+        // Window Size
         public struct POINT
         {
             public int x;
@@ -101,6 +105,7 @@ namespace Mislint.Core
         public enum WindowMessage : int
         {
             WM_GETMINMAXINFO = 0x0024,
+            WM_HOTKEY = 0x0312,
         }
 
         public delegate IntPtr WinProc(IntPtr hWnd, WindowMessage msg, IntPtr wParam, IntPtr lParam);
@@ -124,5 +129,12 @@ namespace Mislint.Core
             else
                 return new IntPtr(SetWindowLong32(hWnd, nIndex, newProc));
         }
+
+        // HotKey
+        [LibraryImport("user32.dll")]
+        public static partial int RegisterHotKey(IntPtr HWnd, int Id, ModifierKeys modKey, VirtualKey key);
+
+        [LibraryImport("user32.dll")]
+        public static partial int UnregisterHotKey(IntPtr HWnd, int Id);
     }
 }

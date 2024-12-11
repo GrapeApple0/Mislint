@@ -4,7 +4,6 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Mislint.Components;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Mislint.Core
 {
@@ -52,7 +51,7 @@ namespace Mislint.Core
                 {
                     Child = new Imager()
                     {
-                        Url = $"https://{Shared.MisharpApp.Host}/emoji/{emoji.Name}@..webp",
+                        Url = $"http{(Shared.MisharpApp.UseHttps ? "s" : "")}://{Shared.MisharpApp.Host}/emoji/{emoji.Name}@..webp",
                         Height = 25,
                         HorizontalAlignment = HorizontalAlignment.Stretch,
                         MaxWidth = 25,

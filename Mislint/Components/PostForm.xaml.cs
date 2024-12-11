@@ -6,7 +6,7 @@ using System;
 using Windows.Storage.Pickers;
 using Windows.Storage;
 using System.IO;
-using Misharp.Model;
+using Misharp.Models;
 using Misharp.Controls;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -23,8 +23,8 @@ namespace Mislint.Components
     public sealed partial class PostForm : UserControl
     {
         private readonly ILogger logger;
-        private readonly ObservableCollection<DriveFile> _files = new();
-        private NotesApi.CreateVisibilityEnum _visibility = NotesApi.CreateVisibilityEnum.Public;
+        private readonly ObservableCollection<DriveFileModel> _files = new();
+        private NotesApi.NotesCreatePropertiesVisibilityEnum _visibility = NotesApi.NotesCreatePropertiesVisibilityEnum.Public;
 
         public PostForm()
         {
@@ -59,7 +59,7 @@ namespace Mislint.Components
                     Children = {
                         new Image()
                         {
-                            Source = new BitmapImage(new Uri(this._files[^1].Url)),
+                            Source = new BitmapImage(new Uri(this._files[^1].Url.ToString())),
                             Width = 60,
                             Height = 60,
                             Stretch = Stretch.UniformToFill,
@@ -72,7 +72,7 @@ namespace Mislint.Components
         private async void PostForm_Loaded(object sender, RoutedEventArgs e)
         {
             Shared.I ??= (await Shared.MisharpApp.IApi.I()).Result;
-            this.UserIcon.Url = Shared.I.AvatarUrl;
+            this.UserIcon.Url = Shared.I.AvatarUrl.ToString();
         }
 
         private async void PostButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -121,7 +121,7 @@ namespace Mislint.Components
 
         private void VisibilitySelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            this._visibility = (NotesApi.CreateVisibilityEnum)(((ComboBox)sender).SelectedIndex);
+            this._visibility = (NotesApi.NotesCreatePropertiesVisibilityEnum)(((ComboBox)sender).SelectedIndex);
         }
     }
 }

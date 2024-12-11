@@ -26,7 +26,7 @@ namespace Mislint
             this.AddOtherProvider(new Microsoft.UI.Xaml.XamlTypeInfo.XamlControlsXamlMetaDataProvider());
         }
 
-        private static void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             Trace.WriteLine($"Exception: {e.Exception}\nMessage: {e.Exception.Message}\nTrace: {e.Exception.StackTrace}\nSource: {e.Exception.Source}");
             MainWindow.ShowDialog($"Exception: {e.Exception}\nMessage: {e.Exception.Message}\nTrace: {e.Exception.StackTrace}\nSource: {e.Exception.Source}");
@@ -36,7 +36,7 @@ namespace Mislint
         private static void OnUnobservedException(object sender, UnobservedTaskExceptionEventArgs e)
         {
             Trace.WriteLine($"Exception: {e.Exception}\nMessage: {e.Exception.Message}\nTrace: {e.Exception.StackTrace}\nSource: {e.Exception.Source}");
-            MainWindow.ShowDialog($"Exception: {e.Exception}\nMessage: {e.Exception.Message}\nTrace: {e.Exception.StackTrace}\nSource: {e.Exception.Source}");
+            MainWindow.ShowDialog($"Exception: {e.Exception}\nMessage: {e.Exception.Message}\nTrace: {e.Exception.StackTrace}\nSource: {e.Exception.Source}");       
         }
 
         /// <summary>
@@ -45,12 +45,19 @@ namespace Mislint
         /// <param name="args">Details about the launch request and process.</param>
         protected override async void OnLaunched(LaunchActivatedEventArgs args)
         {
-            if (Core.Settings.Instance.Setting.Host != null && Core.Settings.Instance.Setting.Token != null)
+            if (Settings.Instance.Setting.Host != null && Settings.Instance.Setting.Token != null)
             {
-                Shared.MisharpApp = new Misharp.App(Core.Settings.Instance.Setting.Host, Core.Settings.Instance.Setting.Token, Shared.HttpClient, true);
-                Shared.I = (await Shared.MisharpApp.IApi.I()).Result;
-                Shared.Meta = (await Shared.MisharpApp.MetaApi.Meta()).Result;
-                Shared.Emojis = (await Shared.MisharpApp.EmojisApi.Emojis()).Result.Emojis;
+                try
+                {
+                    Shared.MisharpApp = new Misharp.App(Settings.Instance.Setting.Host, Settings.Instance.Setting.Token, Shared.HttpClient, true);
+                    Shared.I = (await Shared.MisharpApp.IApi.I()).Result;
+                    Shared.Meta = (await Shared.MisharpApp.MetaApi.Meta()).Result;
+                    Shared.Emojis = (await Shared.MisharpApp.EmojisApi.Emojis()).Result.Emojis;
+                } 
+                catch
+                {
+                    Settings.Instance.Setting.Token = null;
+                }
             }
             MainWindow.Activate();
         }

@@ -15,12 +15,7 @@
                 <Grid Height="200" Opacity="0.7">
                     <Image x:Name="Banner" Stretch="UniformToFill" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
                 </Grid>
-                <Border CornerRadius="100" Width="80" Height="80"
-                        BorderThickness="0" BorderBrush="Transparent"
-                        Background="#202020"
-                        Margin="0,190,0,0">
-                    <components:Imager x:Name="Icon" Width="80" Height="80"/>
-                </Border>
+                <components:UserIcon x:Name="Icon" Height="100" Margin="0,200,0,0"/>
             </Grid>
             <StackPanel>
                 <TextBlock x:Name="name" HorizontalAlignment="Center" FontSize="13"/>

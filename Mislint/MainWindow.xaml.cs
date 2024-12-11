@@ -3,20 +3,16 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Mislint.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Windows.Devices.Geolocation;
 using Windows.Foundation;
 using Windows.System;
-using Windows.UI.Core;
 using WinRT.Interop;
+using static Mislint.Core.KeyboardHook;
 using WindowActivatedEventArgs = Microsoft.UI.Xaml.WindowActivatedEventArgs;
 
 namespace Mislint
@@ -35,6 +31,8 @@ namespace Mislint
         public static int MinWindowHeight { get; set; } = 480;
         public static int MaxWindowWidth { get; set; } = 0;
         public static int MaxWindowHeight { get; set; } = 0;
+        public KeyboardHook keyboardHook;
+        public event EventHandler<KeyPressedEventArgs> KeyPressed;
 
         private void RegisterWindowMinMax()
         {
@@ -60,6 +58,16 @@ namespace Mislint
                     minMaxInfo.ptMaxTrackSize.y = (int)(MaxWindowHeight * scalingFactor);
                 Marshal.StructureToPtr(minMaxInfo, lParam, true);
             }
+            if (msg == NativeMethods.WindowMessage.WM_HOTKEY)
+            {
+                checked
+                {
+                    var key = (VirtualKey)(((int)lParam >> 16) & 0xFFFF);
+                    var modifier = (ModifierKeys)((int)lParam & 0xFFFF);
+                    if (this.KeyPressed != null)
+                        this.KeyPressed(this, new KeyPressedEventArgs(modifier, key));
+                }
+            }
             return NativeMethods.CallWindowProc(this._oldWndProc, hWnd, msg, wParam, lParam);
         }
 
@@ -68,21 +76,6 @@ namespace Mislint
             WindowId myWndId = Win32Interop.GetWindowIdFromWindow(this._hWnd);
             return AppWindow.GetFromWindowId(myWndId);
         }
-
-        private static KeyboardAccelerator BuildKeyboardAccelerator(VirtualKey key, VirtualKeyModifiers? modifiers = null, TypedEventHandler<KeyboardAccelerator, KeyboardAcceleratorInvokedEventArgs>? eventHandler = null)
-        {
-            var keyboardAccelerator = new KeyboardAccelerator { Key = key };
-            if (modifiers.HasValue)
-            {
-                keyboardAccelerator.Modifiers = modifiers.Value;
-            }
-            if (eventHandler != null)
-                keyboardAccelerator.Invoked += eventHandler;
-            return keyboardAccelerator;
-        }
-
-        private readonly KeyboardAccelerator _altLeftKeyboardAccelerator;
-        private readonly KeyboardAccelerator _altRightKeyboardAccelerator;
 
         public MainWindow()
         {
@@ -102,25 +95,15 @@ namespace Mislint
                     e.Handled = !TryGoForward();
                 }
             };
-            this.Content.KeyDown += (sender, e) =>
-            {
-                if (e.Key.HasFlag(VirtualKey.Control))
-                {
-                    Debug.WriteLine("ctrl+left down");
-                }
-            };
-            //this._altLeftKeyboardAccelerator = BuildKeyboardAccelerator(VirtualKey.Left, VirtualKeyModifiers.Control,
-            //    (sender, args) =>
+            //this.keyboardHook = new KeyboardHook(this, this._hWnd);
+            //this.keyboardHook.RegisterHotKey(ModifierKeys.Shift & ModifierKeys.Alt, VirtualKey.M);
+            //this.keyboardHook.KeyPressed += (sender, args) =>
+            //{
+            //    if (args.Modifier == (ModifierKeys.Shift & ModifierKeys.Alt) && args.Key == VirtualKey.M)
             //    {
-            //        args.Handled = this.TryGoBack();
-            //    });
-            //this._altRightKeyboardAccelerator = BuildKeyboardAccelerator(VirtualKey.Right, VirtualKeyModifiers.Control,
-            //    (sender, args) =>
-            //    {
-            //        args.Handled = this.TryGoForward();
-            //    });
-            //this.Content.KeyboardAccelerators.Add(this._altLeftKeyboardAccelerator);
-            //this.Content.KeyboardAccelerators.Add(this._altRightKeyboardAccelerator);
+            //        Debug.WriteLine("Alt + Shift + M");
+            //    }
+            //};
         }
 
         private void Window_Activated(object sender, WindowActivatedEventArgs e)
@@ -138,6 +121,7 @@ namespace Mislint
 
         private void OnClosing(object sender, AppWindowClosingEventArgs e)
         {
+            //this.keyboardHook.Dispose();
             if (!GlobalLock.Instance.Lock) return;
             e.Cancel = true;
             GlobalLock.Instance.Unlocked += (_, _) =>
@@ -157,7 +141,7 @@ namespace Mislint
                     child
                 },
                 MaxWidth = this.Root.ActualWidth - 25,
-                MaxHeight = this.Root.ActualHeight / 1.5,
+                MaxHeight = this.Root.ActualHeight - 25,
             };
             this.OverlayFlyout.ShowAt(this.Content, new FlyoutShowOptions
             {
@@ -180,6 +164,20 @@ namespace Mislint
         public void SwitchPage(Type sourcePageType, Dictionary<string, string> parameter)
         {
             this.ContentFrame.Navigate(sourcePageType, parameter);
+            if (sourcePageType == typeof(Pages.UserInfo))
+            {
+                if (parameter.TryGetValue("UserId", out var userId))
+                {
+                    if (userId != Shared.I.Id)
+                    {
+                        this.NavigationView.SelectedItem = -1;
+                    }
+                    else
+                    {
+                        this.NavigationView.SelectedItem = this.ProfileNavigationViewItem;
+                    }
+                }
+            }
         }
 
         private void NavigationView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -201,7 +199,8 @@ namespace Mislint
                     this.ContentFrame.Navigate(typeof(Pages.Timeline));
                     break;
                 case "Notification":
-                    throw new Exception("test");
+                    this.ContentFrame.Navigate(typeof(Pages.Notification));
+                    break;
                 case "Profile":
                     this.ContentFrame.Navigate(typeof(Pages.UserInfo), new Dictionary<string, string>
                     {

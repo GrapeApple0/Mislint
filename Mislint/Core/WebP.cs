@@ -173,5 +173,4 @@ namespace Mislint.Core
             return;
         }
     }
-
 }

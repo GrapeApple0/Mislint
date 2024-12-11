@@ -1,4 +1,4 @@
-﻿using Misharp.Model;
+﻿using Misharp.Models;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -10,9 +10,9 @@ namespace Mislint.Core
     {
         public static HttpClient HttpClient { get; } = new HttpClient();
         public static Misharp.App MisharpApp { get; set; }
-        public static MeDetailed I { get; set; }
-        public static MetaResponse Meta { get; set; }
-        public static List<EmojiSimple> Emojis { get; set; }
+        public static MeDetailedModel I { get; set; }
+        public static MetaMetaModel Meta { get; set; }
+        public static List<EmojiSimpleModel> Emojis { get; set; }
         public static void TimeSpanToDateParts(DateTime d1, DateTime d2, out int years, out int months, out int days, out int hours, out int minutes, out int seconds)
         {
             if (d1 < d2)

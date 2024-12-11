@@ -73,7 +73,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>..\Mislint\bin\x64\Debug\net7.0-windows10.0.19041.0</OutDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ExternalIncludePath>$(SolutionDir)cpp-lib\libwebp\include\webp;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>..\Mislint\bin\x64\Debug\net7.0-windows10.0.19041.0</OutDir>
   </PropertyGroup>
@@ -135,15 +137,11 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>libwebp\lib;libpng\lpng</AdditionalLibraryDirectories>
-      <AdditionalDependencies>D:\libwebp\lib\libwebp.lib;D:\libwebp\lib\libwebpdemux.lib;D:\libpng\lpng\projects\vstudio\x64\Release\libpng16.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)cpp-lib\libwebp\lib\libwebpdemux.lib;$(SolutionDir)cpp-lib\libwebp\lib\libwebp.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="decode.h" />
-    <ClInclude Include="demux.h" />
     <ClInclude Include="lib.h" />
-    <ClInclude Include="mux_types.h" />
-    <ClInclude Include="types.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lib.cpp" />

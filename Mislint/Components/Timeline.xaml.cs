@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Misharp.Models;
 using Mislint.Core;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace Mislint.Components
     {
         private string _lastId;
         private bool _loading;
-        private bool _last;
+        private bool _last = false;
         public TimelineTypeEnum TimelineType { get; set; }
         public string UserId { get; set; }
 
@@ -22,11 +23,12 @@ namespace Mislint.Components
         public void Reload()
         {
             this.Notes.Children.Clear();
+            this._last = false;
             this._lastId = null;
             LoadTimeline();
         }
 
-        private async Task<List<Misharp.Model.Note>> GetTimeline(TimelineTypeEnum timelineType,
+        private async Task<List<NoteModel>> GetTimeline(TimelineTypeEnum timelineType,
             int limit = 10, string sinceId = null, string untilId = null,
             int? sinceDate = null, int? untilDate = null,
             bool allowPartial = false, bool includeMyRenotes = true,
@@ -84,6 +86,7 @@ namespace Mislint.Components
 
         public async void LoadTimeline()
         {
+            if (_last) return;
             this._loading = true;
             this.ProgressRing.Visibility = Visibility.Visible;
             var tl = (await GetTimeline(this.TimelineType, limit: 20, untilId: this._lastId));

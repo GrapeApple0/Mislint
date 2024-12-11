@@ -10,6 +10,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Media;
+using System.IO;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -22,12 +23,13 @@ namespace Mislint.Components
         private readonly List<ImageSource> _bitmaps = [];
         private int _currentFrame = 0;
         private readonly DispatcherTimer _timer = new();
-        private int _width;
-        private int _height;
+        private int _webPImageWidth;
+        private int _webPImageHeight;
         private readonly ILogger _logger;
         public delegate void ImageLoaded<in T>(T args);
         public event ImageLoaded<EventArgs> ImageLoadedEvent;
         public double Aspect { get; private set; } = 1;
+        public Image ImageComponent => this.image;
         private string _url;
         public string Url { 
             get => _url;
@@ -81,8 +83,8 @@ namespace Mislint.Components
                 if (result != null && result.Value.Frames.Count > 0)
                 {
                     this._frames = result.Value.Frames;
-                    this._width = result.Value.Width;
-                    this._height = result.Value.Height;
+                    this._webPImageWidth = result.Value.Width;
+                    this._webPImageHeight = result.Value.Height;
                     if (1 < result.Value.Frames.Count)
                     {
                         for (var i = 0; i < this._frames.Count; i++)
@@ -97,6 +99,12 @@ namespace Mislint.Components
                                     var wb = new WriteableBitmap(result.Value.Width, result.Value.Height);
                                     await wb.PixelBuffer.AsStream().WriteAsync(this._frames[i].Data);
                                     this._bitmaps.Add(wb);
+                                    this.image.Source = wb;
+                                    //var bitmap = new BitmapImage();
+                                    //using var ms = new MemoryStream(this._frames[i].Data);
+                                    //bitmap.SetSource(ms.AsRandomAccessStream());
+                                    //this.image.Source = bitmap;
+                                    //this._bitmaps.Add(bitmap);
                                     //this.Bitmaps.Add(await GetBitmapAsync(this.frames[i].Data));
                                 }
                             });
@@ -117,26 +125,34 @@ namespace Mislint.Components
                                 var wb = new WriteableBitmap(result.Value.Width, result.Value.Height);
                                 await wb.PixelBuffer.AsStream().WriteAsync(this._frames[0].Data);
                                 this.image.Source = wb;
+                                //var bitmap = new BitmapImage();
+                                //using var ms = new MemoryStream(this._frames[0].Data);
+                                //bitmap.SetSource(ms.AsRandomAccessStream());
+                                //this.image.Source = bitmap;
                                 //this.Bitmaps.Add(await GetBitmapAsync(this.frames[0].Data));
                             }
                         });
                     }
-                    this.image.Width = this._width;
-                    this.image.Height = this.Height;
-                    this.Aspect = (double)this._width / this._height;
+                    //this.image.Width = this.Width;
+                    //this.image.Height = this.Height;
+                    this.image.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    this.image.VerticalAlignment = VerticalAlignment.Stretch;
+                    this.Aspect = (double)this._webPImageWidth / this._webPImageHeight;
                 }
                 GlobalLock.Instance.LockItems.Remove(this.GetHashCode());
             }
             else
             {
-                var bitmapImage = new BitmapImage(new Uri(this.Url))
+                DispatcherQueue.TryEnqueue(() =>
                 {
-                    DecodePixelHeight = (int)this.Height
-                };
-                this.image.Source = bitmapImage;
-                this.Aspect = (double)bitmapImage.PixelWidth / bitmapImage.PixelHeight;
-                this.image.Height = this.Height;
-                //this.image.Margin = new Thickness(5,0,5,0);
+                    using var ms = new MemoryStream(bytes);
+                    var bitmapImage = new BitmapImage();
+                    bitmapImage.SetSource(ms.AsRandomAccessStream());
+                    this.image.Source = bitmapImage;
+                    this.Aspect = (double)bitmapImage.PixelWidth / bitmapImage.PixelHeight;
+                    this.image.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    this.image.VerticalAlignment = VerticalAlignment.Stretch;
+                });
             }
             if (ImageLoadedEvent != null) this.ImageLoadedEvent(EventArgs.Empty);
         }

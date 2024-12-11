@@ -2,14 +2,15 @@ using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Misharp.Controls;
+using Misharp.Models;
 using Mislint.Core;
 using System;
 using System.Collections.Generic;
-using static Misharp.Controls.UsersApi;
+using System.Diagnostics;
+using System.Text.Json;
 using static Mislint.Components.Timeline;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -28,7 +29,7 @@ namespace Mislint.Pages
         private bool _loading;
         private bool _last;
 
-        private UsersShowResponse user;
+        private UserDetailedModel user;
         public UserInfo()
         {
             this.InitializeComponent();
@@ -36,10 +37,11 @@ namespace Mislint.Pages
 
         private async void UserInfo_Loaded(object sender, RoutedEventArgs e)
         {
-            this.user = (await Shared.MisharpApp.UsersApi.Show(this.UserId, null)).Result;
-            if (!string.IsNullOrEmpty(this.user.BannerUrl))
-                this.Banner.Source = new BitmapImage(new Uri(this.user.BannerUrl));
-            this.Icon.Url = this.user.AvatarUrl;
+            var res = (await Shared.MisharpApp.UsersApi.Show(this.UserId, null)).Result;
+            this.user = JsonSerializer.Deserialize<UserDetailedModel>(res, Misharp.Config.JsonSerializerOptions);
+            if (!string.IsNullOrEmpty(this.user.BannerUrl?.ToString()))
+                this.Banner.Source = new BitmapImage(new Uri(this.user.BannerUrl.ToString()));
+            this.Icon.User = (UserDetailedNotMeModel)this.user;
             this.name.Inlines.Add(new Run()
             {
                 Text = this.user.Name ?? this.user.Username,
@@ -49,7 +51,7 @@ namespace Mislint.Pages
             this.Username.Text = $"@{this.user.Username}@{this.user.Host ?? Shared.MisharpApp.Host}";
             this.Description.Text = this.user.Description;
             var joinedAt = this.user.CreatedAt;
-            this.JoinedAt.Text = $"{joinedAt.Year}/{joinedAt.Month}/{joinedAt.Day} {joinedAt.Hour}:{joinedAt.Minute}:{joinedAt.Second} ({Shared.GetTimeSpan(this.user.CreatedAt)})";
+            this.JoinedAt.Text = $"{joinedAt?.Year}/{joinedAt?.Month}/{joinedAt?.Day} {joinedAt?.Hour}:{joinedAt?.Minute}:{joinedAt?.Second} ({Shared.GetTimeSpan(this.user.CreatedAt ?? DateTime.Now)})";
 
             var timeline = new Components.Timeline
             {
